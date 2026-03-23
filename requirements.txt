@@ -1,0 +1,32 @@
+# API
+fastapi
+uvicorn[standard]
+httpx
+
+# Database
+sqlalchemy[asyncio]
+alembic
+asyncpg
+psycopg2-binary
+
+# Data validation
+pydantic
+pydantic-settings
+
+# Policy engine
+opa-python-client
+
+# Dashboard
+streamlit
+pandas
+
+# Human review
+slack-bolt
+
+# PDF export
+weasyprint
+jinja2
+
+# Utilities
+python-dotenv
+python-multipart
