@@ -18,7 +18,7 @@ Intercepts tool calls before they execute. Enforces policy. Logs everything.
 Ubuntu WSL2 on Windows
 
 ## Project Structure
-~/dev/aicontrol/
+~/aicontrol/
 
 ## Current Phase
 V1 prototype — Week 1, Day 1
