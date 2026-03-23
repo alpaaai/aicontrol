@@ -1,0 +1,15 @@
+{
+  "project": "aicontrol",
+  "context_files": [
+    "CLAUDE.md",
+    "app/models/schemas.py",
+    "docker-compose.yml",
+    "policies/policies.yaml"
+  ],
+  "ignore": [
+    "venv/",
+    ".env",
+    "migrations/versions/",
+    "__pycache__/"
+  ]
+}
