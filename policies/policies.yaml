@@ -1,0 +1,31 @@
+policies:
+  - name: block_dangerous_tools
+    description: Block tools that can execute arbitrary code or delete data
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools:
+        - execute_code
+        - delete_database
+        - drop_table
+        - shell_exec
+        - rm_rf
+    action: deny
+    severity: critical
+    compliance_frameworks: ["SOC2", "ISO27001"]
+
+  - name: require_review_for_external_calls
+    description: Flag any tool that makes external HTTP requests for human review
+    rule_type: tool_pattern
+    condition:
+      tool_name_contains: ["http_request", "webhook", "external_api"]
+    action: review
+    severity: high
+    compliance_frameworks: ["SOC2"]
+
+  - name: allow_standard_tools
+    description: Allow all other tools by default
+    rule_type: default_allow
+    condition: {}
+    action: allow
+    severity: low
+    compliance_frameworks: []
