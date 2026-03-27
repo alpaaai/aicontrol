@@ -26,11 +26,12 @@ async def upsert_policies(session: AsyncSession, policies: list[dict]) -> None:
         await session.execute(
             text("""
                 INSERT INTO policies
-                    (name, description, rule_type, condition, action,
+                    (id, name, description, rule_type, condition, action,
                      compliance_frameworks, severity, active)
                 VALUES
-                    (:name, :description, :rule_type, :condition::jsonb, :action,
-                     :compliance_frameworks::jsonb, :severity, true)
+                    (gen_random_uuid(), :name, :description, :rule_type,
+                     CAST(:condition AS jsonb), :action,
+                     CAST(:compliance_frameworks AS jsonb), :severity, true)
                 ON CONFLICT (name) DO UPDATE SET
                     description = EXCLUDED.description,
                     rule_type = EXCLUDED.rule_type,
