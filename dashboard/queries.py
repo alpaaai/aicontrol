@@ -86,3 +86,14 @@ def get_risk_scores() -> list[dict[str, Any]]:
             ORDER BY ae.session_id, ae.sequence_number
         """)).mappings().all()
     return [dict(r) for r in rows]
+
+
+def get_tokens() -> list[dict[str, Any]]:
+    """Return all API token metadata. Never returns the token string itself."""
+    with get_sync_session() as session:
+        rows = session.execute(text("""
+            SELECT id, role, description, revoked, created_at
+            FROM api_tokens
+            ORDER BY created_at DESC
+        """)).mappings().all()
+    return [dict(r) for r in rows]
