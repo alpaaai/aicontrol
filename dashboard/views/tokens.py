@@ -1,4 +1,5 @@
 """Token management view — issue and revoke API tokens."""
+import os
 import subprocess
 import sys
 import pandas as pd
@@ -8,11 +9,13 @@ from dashboard.queries import get_tokens
 
 
 def _run_script(script: str, args: list[str]) -> tuple[bool, str]:
-    """Run a management script in-process. Returns (success, output)."""
+    """Run a management script via subprocess. Returns (success, output)."""
+    env = {**os.environ, "APP_ENV": "production"}
     result = subprocess.run(
         [sys.executable, f"scripts/{script}"] + args,
         capture_output=True,
         text=True,
+        env=env,
     )
     return result.returncode == 0, result.stdout + result.stderr
 
