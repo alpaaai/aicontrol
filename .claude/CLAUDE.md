@@ -83,6 +83,11 @@ SQLAlchemy ORM models define `server_default=func.gen_random_uuid()`, but this o
 
 **Rule**: Use `app.dependency_overrides[require_agent] = lambda: {"role": "agent"}` to mock FastAPI auth dependencies in tests. Always clean up with `app.dependency_overrides.pop(...)` in a finally block.
 
+### pytest-asyncio — async tests sharing a real DB pool get "Future attached to a different loop"
+By default, each async test function gets its own event loop. SQLAlchemy's asyncpg connection pool caches connections per loop. When the second test runs with a new loop, the pool tries to reuse a connection from the old loop and raises `RuntimeError: Future attached to a different loop`.
+
+**Rule**: Add `asyncio_default_test_loop_scope = session` to `pytest.ini` so all async tests share one event loop. Required whenever tests hit a real async DB.
+
 ### OPA Rego — `decision != "deny"` is invalid for priority ordering
 Using `decision != "deny"` as a guard inside another `decision` rule causes undefined behavior in Rego because rules are not evaluated sequentially — the value of `decision` is not yet known when the rule is being evaluated.
 
