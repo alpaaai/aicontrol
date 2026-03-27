@@ -680,20 +680,20 @@ git commit -m "feat: add streamlit dashboard entry point with sidebar nav"
 
 ## Task 6: Full Verification
 
-- [ ] **Step 1: Run full test suite**
+- [x] **Step 1: Run full test suite**
 
 ```bash
 cd ~/aicontrol && pytest tests/ -v
 ```
 Expected: All tests pass.
 
-- [ ] **Step 2: Run seed script to populate data**
+- [x] **Step 2: Run seed script to populate data**
 
 ```bash
 cd ~/aicontrol && python scripts/seed.py
 ```
 
-- [ ] **Step 3: Fire 3 test intercepts**
+- [x] **Step 3: Fire 3 test intercepts**
 
 ```bash
 # Allow
@@ -712,7 +712,7 @@ curl -s -X POST http://localhost:8000/intercept \
   -d '{"session_id":"00000000-0000-0000-0000-000000000002","agent_id":"00000000-0000-0000-0000-000000000001","agent_name":"demo-agent","tool_name":"http_request","tool_parameters":{},"sequence_number":3}'
 ```
 
-- [ ] **Step 4: Verify dashboard shows live data**
+- [x] **Step 4: Verify dashboard shows live data**
 
 Open `http://localhost:8501` and confirm:
 - Audit Log shows 3 events with correct allow/deny/review decisions
@@ -721,12 +721,345 @@ Open `http://localhost:8501` and confirm:
 - Policies shows 3 policies
 - Agents shows demo-agent
 
-- [ ] **Step 5: Final commit**
+- [x] **Step 5: Final commit**
 
 ```bash
 cd ~/aicontrol
 git add -A
 git commit -m "chore: day 3 complete — streamlit dashboard verified"
+```
+
+---
+
+## Task 7: Token Management Page (Streamlit)
+ 
+`dashboard/views/tokens.py` — admin page to view active tokens, issue new ones, and revoke existing ones. Calls the FastAPI `/policies` pattern but for tokens — reads directly from DB via sync session, issues/revokes via subprocess calls to the scripts.
+ 
+**Files:**
+- Create: `dashboard/views/tokens.py`
+- Modify: `dashboard/app.py` — add Tokens to nav (admin section)
+- Modify: `dashboard/queries.py` — add `get_tokens()` query
+ 
+- [ ] **Step 1: Add `get_tokens` to `dashboard/queries.py`**
+ 
+Append to `dashboard/queries.py`:
+ 
+```python
+def get_tokens() -> list[dict[str, Any]]:
+    """Return all API tokens (never returns the token itself, only metadata)."""
+    with get_sync_session() as session:
+        rows = session.execute(text("""
+            SELECT id, role, description, revoked, created_at
+            FROM api_tokens
+            ORDER BY created_at DESC
+        """)).mappings().all()
+    return [dict(r) for r in rows]
+```
+ 
+- [ ] **Step 2: Write `dashboard/views/tokens.py`**
+ 
+```bash
+cat > ~/aicontrol/dashboard/views/tokens.py << 'EOF'
+"""Token management view — issue and revoke API tokens."""
+import subprocess
+import sys
+import pandas as pd
+import streamlit as st
+ 
+from dashboard.queries import get_tokens
+ 
+ 
+def _run_script(script: str, args: list[str]) -> tuple[bool, str]:
+    """Run a management script via subprocess. Returns (success, output)."""
+    result = subprocess.run(
+        [sys.executable, f"scripts/{script}"] + args,
+        capture_output=True,
+        text=True,
+    )
+    output = result.stdout + result.stderr
+    return result.returncode == 0, output
+ 
+ 
+def render() -> None:
+    st.header("API Token Management")
+    st.caption("Tokens grant access to the AIControl API. Store them securely — shown once only.")
+ 
+    # Issue new token
+    with st.expander("Issue New Token", expanded=False):
+        with st.form("issue_token_form"):
+            role = st.selectbox("Role", ["agent", "admin"])
+            desc = st.text_input("Description", placeholder="e.g. Claims processing agent")
+            submitted = st.form_submit_button("Issue Token")
+ 
+        if submitted:
+            if not desc.strip():
+                st.error("Description is required.")
+            else:
+                success, output = _run_script("issue_token.py", [
+                    "--role", role, "--desc", desc
+                ])
+                if success:
+                    st.success("Token issued successfully.")
+                    st.code(output, language=None)
+                    st.warning("Copy this token now — it will not be shown again.")
+                else:
+                    st.error(f"Failed to issue token:\n{output}")
+ 
+    st.divider()
+ 
+    # Active tokens table
+    st.subheader("Active Tokens")
+    if st.button("Refresh"):
+        st.rerun()
+ 
+    tokens = get_tokens()
+    if not tokens:
+        st.info("No tokens issued yet.")
+        return
+ 
+    df = pd.DataFrame(tokens)
+    df["status"] = df["revoked"].map(lambda r: "🔴 Revoked" if r else "🟢 Active")
+    df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime("%Y-%m-%d %H:%M")
+    df["id"] = df["id"].astype(str)
+ 
+    active = df[df["revoked"] == False]
+    revoked = df[df["revoked"] == True]
+ 
+    st.dataframe(
+        active[["id", "role", "description", "created_at"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+ 
+    # Revoke form
+    if not active.empty:
+        st.divider()
+        st.subheader("Revoke Token")
+        with st.form("revoke_form"):
+            token_options = {
+                f"{r['description']} ({r['role']})": r["id"]
+                for _, r in active.iterrows()
+            }
+            selected = st.selectbox("Select token to revoke", list(token_options.keys()))
+            confirmed = st.checkbox("I confirm I want to revoke this token")
+            revoke_submitted = st.form_submit_button("Revoke", type="primary")
+ 
+        if revoke_submitted:
+            if not confirmed:
+                st.warning("Check the confirmation box to proceed.")
+            else:
+                token_id = token_options[selected]
+                success, output = _run_script("revoke_token.py", ["--id", token_id])
+                if success:
+                    st.success(f"Token revoked: {selected}")
+                    st.rerun()
+                else:
+                    st.error(f"Failed to revoke token:\n{output}")
+ 
+    if not revoked.empty:
+        with st.expander(f"Revoked tokens ({len(revoked)})"):
+            st.dataframe(
+                revoked[["id", "role", "description", "created_at"]],
+                use_container_width=True,
+                hide_index=True,
+            )
+ 
+---
+ 
+## Task 7: Token Management Page (Streamlit)
+ 
+`dashboard/views/tokens.py` — admin page to view active tokens, issue new ones, and revoke existing ones. Reads token metadata from DB via sync session. Issues/revokes by calling the management scripts via subprocess — same scripts customers run via `docker compose exec`.
+ 
+**Files:**
+- Modify: `dashboard/queries.py` — add `get_tokens()`
+- Create: `dashboard/views/tokens.py`
+- Modify: `dashboard/app.py` — add Tokens to sidebar nav
+ 
+- [ ] **Step 1: Add `get_tokens` to `dashboard/queries.py`**
+ 
+Append to `dashboard/queries.py`:
+ 
+```python
+def get_tokens() -> list[dict[str, Any]]:
+    """Return all API token metadata. Never returns the token string itself."""
+    with get_sync_session() as session:
+        rows = session.execute(text("""
+            SELECT id, role, description, revoked, created_at
+            FROM api_tokens
+            ORDER BY created_at DESC
+        """)).mappings().all()
+    return [dict(r) for r in rows]
+```
+ 
+- [ ] **Step 2: Write `dashboard/views/tokens.py`**
+ 
+```python
+# dashboard/views/tokens.py
+"""Token management view — issue and revoke API tokens."""
+import subprocess
+import sys
+import pandas as pd
+import streamlit as st
+ 
+from dashboard.queries import get_tokens
+ 
+ 
+def _run_script(script: str, args: list[str]) -> tuple[bool, str]:
+    """Run a management script in-process. Returns (success, output)."""
+    result = subprocess.run(
+        [sys.executable, f"scripts/{script}"] + args,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0, result.stdout + result.stderr
+ 
+ 
+def render() -> None:
+    st.header("API Token Management")
+    st.caption(
+        "Tokens grant access to the AIControl API. "
+        "Store them securely — shown once only."
+    )
+ 
+    # Issue new token
+    with st.expander("Issue New Token", expanded=False):
+        with st.form("issue_token_form"):
+            role = st.selectbox("Role", ["agent", "admin"])
+            desc = st.text_input(
+                "Description", placeholder="e.g. Claims processing agent"
+            )
+            submitted = st.form_submit_button("Issue Token")
+ 
+        if submitted:
+            if not desc.strip():
+                st.error("Description is required.")
+            else:
+                success, output = _run_script(
+                    "issue_token.py", ["--role", role, "--desc", desc]
+                )
+                if success:
+                    st.success("Token issued successfully.")
+                    st.code(output, language=None)
+                    st.warning("Copy this token now — it will not be shown again.")
+                else:
+                    st.error(f"Failed to issue token:\n{output}")
+ 
+    st.divider()
+ 
+    # Token table
+    st.subheader("Active Tokens")
+    if st.button("Refresh"):
+        st.rerun()
+ 
+    tokens = get_tokens()
+    if not tokens:
+        st.info("No tokens issued yet.")
+        return
+ 
+    df = pd.DataFrame(tokens)
+    df["id"] = df["id"].astype(str)
+    df["created_at"] = pd.to_datetime(df["created_at"]).dt.strftime("%Y-%m-%d %H:%M")
+ 
+    active = df[df["revoked"] == False]
+    revoked_df = df[df["revoked"] == True]
+ 
+    st.dataframe(
+        active[["id", "role", "description", "created_at"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+ 
+    # Revoke form
+    if not active.empty:
+        st.divider()
+        st.subheader("Revoke Token")
+        with st.form("revoke_form"):
+            options = {
+                f"{r['description']} ({r['role']})": r["id"]
+                for _, r in active.iterrows()
+            }
+            selected = st.selectbox("Select token to revoke", list(options.keys()))
+            confirmed = st.checkbox("I confirm I want to revoke this token")
+            revoke_submitted = st.form_submit_button("Revoke", type="primary")
+ 
+        if revoke_submitted:
+            if not confirmed:
+                st.warning("Check the confirmation box to proceed.")
+            else:
+                success, output = _run_script(
+                    "revoke_token.py", ["--id", options[selected]]
+                )
+                if success:
+                    st.success(f"Revoked: {selected}")
+                    st.rerun()
+                else:
+                    st.error(f"Failed:\n{output}")
+ 
+    if not revoked_df.empty:
+        with st.expander(f"Revoked tokens ({len(revoked_df)})"):
+            st.dataframe(
+                revoked_df[["id", "role", "description", "created_at"]],
+                use_container_width=True,
+                hide_index=True,
+            )
+```
+ 
+- [ ] **Step 3: Update `dashboard/app.py` to add Tokens to nav**
+ 
+Replace the `VIEWS` dict and import line in `dashboard/app.py`:
+ 
+```python
+from dashboard.views import audit_log, policies, agents, decisions, risk, tokens
+ 
+VIEWS = {
+    "Audit Log": audit_log,
+    "Decision Breakdown": decisions,
+    "Risk Score": risk,
+    "Policies": policies,
+    "Agents": agents,
+    "Tokens": tokens,
+}
+```
+ 
+- [ ] **Step 4: Start dashboard and verify token page**
+ 
+```bash
+streamlit run dashboard/app.py --server.port 8501
+```
+ 
+Navigate to **Tokens** in sidebar. Verify:
+- Issue form renders correctly
+- Issuing a token shows it once and logs to DB
+- Active tokens appear in table
+- Revoke flow marks token as revoked and refreshes table
+ 
+- [ ] **Step 5: Test revoke is enforced on /intercept**
+ 
+```bash
+# Issue a token, note the ID
+docker compose exec api python scripts/issue_token.py --role agent --desc "Test"
+ 
+# Call /intercept with it — expect allow
+curl -s -X POST http://localhost:8000/intercept \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"00000000-0000-0000-0000-000000000002","agent_id":"00000000-0000-0000-0000-000000000001","agent_name":"demo-agent","tool_name":"safe_tool","tool_parameters":{},"sequence_number":1}'
+ 
+# Revoke via dashboard, then call again — expect 401
+curl -s -X POST http://localhost:8000/intercept \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"00000000-0000-0000-0000-000000000002","agent_id":"00000000-0000-0000-0000-000000000001","agent_name":"demo-agent","tool_name":"safe_tool","tool_parameters":{},"sequence_number":2}'
+```
+ 
+Expected: First call returns `allow`, second returns `401 Token not found or revoked`.
+ 
+- [ ] **Step 6: Commit**
+ 
+```bash
+cd ~/aicontrol
+git add dashboard/views/tokens.py dashboard/app.py dashboard/queries.py
+git commit -m "feat: add token management page to streamlit dashboard"
 ```
 
 ---
