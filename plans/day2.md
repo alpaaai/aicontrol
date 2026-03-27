@@ -635,13 +635,13 @@ git commit -m "feat: add audit writer service"
 - Create: `app/routers/intercept.py`
 - Create: `tests/test_intercept.py`
 
-- [ ] **Step 1: Create package marker**
+- [x] **Step 1: Create package marker**
 
 ```bash
 touch ~/aicontrol/app/routers/__init__.py
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```bash
 cat > ~/aicontrol/tests/test_intercept.py << 'EOF'
@@ -729,14 +729,14 @@ async def test_intercept_returns_audit_event_id():
 EOF
 ```
 
-- [ ] **Step 3: Run tests — verify they FAIL**
+- [x] **Step 3: Run tests — verify they FAIL**
 
 ```bash
 cd ~/aicontrol && pytest tests/test_intercept.py -v
 ```
 Expected: `ImportError` for `app.routers.intercept`.
 
-- [ ] **Step 4: Write `app/routers/intercept.py`**
+- [x] **Step 4: Write `app/routers/intercept.py`**
 
 ```bash
 cat > ~/aicontrol/app/routers/intercept.py << 'EOF'
@@ -836,14 +836,14 @@ async def intercept(
 EOF
 ```
 
-- [ ] **Step 5: Run tests — verify they PASS**
+- [x] **Step 5: Run tests — verify they PASS**
 
 ```bash
 cd ~/aicontrol && pytest tests/test_intercept.py -v
 ```
 Expected: `3 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd ~/aicontrol
@@ -861,7 +861,7 @@ git commit -m "feat: add intercept router with policy eval and audit logging"
 - Modify: `app/main.py`
 - Create: `tests/test_startup.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```bash
 cat > ~/aicontrol/tests/test_startup.py << 'EOF'
@@ -890,14 +890,14 @@ async def test_health_still_works():
 EOF
 ```
 
-- [ ] **Step 2: Run tests — verify they FAIL**
+- [x] **Step 2: Run tests — verify they FAIL**
 
 ```bash
 cd ~/aicontrol && pytest tests/test_startup.py -v
 ```
 Expected: `FAILED test_intercept_route_exists` — router not mounted yet.
 
-- [ ] **Step 3: Update `app/main.py`**
+- [x] **Step 3: Update `app/main.py`**
 
 ```bash
 cat > ~/aicontrol/app/main.py << 'EOF'
@@ -935,21 +935,21 @@ async def health() -> dict:
 EOF
 ```
 
-- [ ] **Step 4: Run tests — verify they PASS**
+- [x] **Step 4: Run tests — verify they PASS**
 
 ```bash
 cd ~/aicontrol && pytest tests/test_startup.py -v
 ```
 Expected: `2 passed`.
 
-- [ ] **Step 5: Run full test suite**
+- [x] **Step 5: Run full test suite**
 
 ```bash
 cd ~/aicontrol && pytest tests/ -v
 ```
 Expected: All tests pass across all test files.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd ~/aicontrol
@@ -967,7 +967,7 @@ git commit -m "feat: mount intercept router and run policy loader on startup"
 - Create: `scripts/__init__.py`
 - Create: `scripts/seed.py`
 
-- [ ] **Step 1: Create seed script**
+- [x] **Step 1: Create seed script**
 
 ```bash
 mkdir -p ~/aicontrol/scripts
@@ -1007,7 +1007,7 @@ asyncio.run(seed())
 EOF
 ```
 
-- [ ] **Step 2: Start the server**
+- [x] **Step 2: Start the server**
 
 ```bash
 cd ~/aicontrol
@@ -1016,7 +1016,7 @@ uvicorn app.main:app --reload --port 8000
 
 Expected: Server starts, policy loader runs, no errors. You should see log lines about policies being loaded.
 
-- [ ] **Step 3: Run seed script (in a second terminal)**
+- [x] **Step 3: Run seed script (in a second terminal)**
 
 ```bash
 cd ~/aicontrol && python scripts/seed.py
@@ -1028,7 +1028,7 @@ Seeded agent_id=00000000-0000-0000-0000-000000000001
 Seeded session_id=00000000-0000-0000-0000-000000000002
 ```
 
-- [ ] **Step 4: Demo curl — allowed tool**
+- [x] **Step 4: Demo curl — allowed tool**
 
 ```bash
 curl -s -X POST http://localhost:8000/intercept \
@@ -1045,7 +1045,7 @@ curl -s -X POST http://localhost:8000/intercept \
 
 Expected: `"decision": "allow"`
 
-- [ ] **Step 5: Demo curl — blocked tool**
+- [x] **Step 5: Demo curl — blocked tool**
 
 ```bash
 curl -s -X POST http://localhost:8000/intercept \
@@ -1062,7 +1062,7 @@ curl -s -X POST http://localhost:8000/intercept \
 
 Expected: `"decision": "deny"`
 
-- [ ] **Step 6: Demo curl — review tool**
+- [x] **Step 6: Demo curl — review tool**
 
 ```bash
 curl -s -X POST http://localhost:8000/intercept \
@@ -1079,7 +1079,7 @@ curl -s -X POST http://localhost:8000/intercept \
 
 Expected: `"decision": "review"`
 
-- [ ] **Step 7: Verify audit events were written**
+- [x] **Step 7: Verify audit events were written**
 
 ```bash
 docker compose exec postgres psql -U aicontrol -d aicontrol \
@@ -1088,7 +1088,7 @@ docker compose exec postgres psql -U aicontrol -d aicontrol \
 
 Expected: 3 rows — safe_tool/allow, execute_code/deny, http_request/review.
 
-- [ ] **Step 8: Final commit**
+- [x] **Step 8: Final commit**
 
 ```bash
 cd ~/aicontrol
