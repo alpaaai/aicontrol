@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.models.database import async_session_factory
 from app.routers.intercept import router as intercept_router
+from app.routers.policies import router as policies_router
 from app.services.policy_loader import load_all
 
 
@@ -23,6 +24,7 @@ app = FastAPI(
 )
 
 app.include_router(intercept_router)
+app.include_router(policies_router)
 
 
 @app.get("/health")
