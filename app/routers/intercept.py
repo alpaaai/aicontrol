@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import require_agent
 from app.models.database import get_db
 from app.models.schemas import Policy
 from app.services.opa_client import evaluate
@@ -53,6 +54,7 @@ async def get_active_policies(session: AsyncSession) -> list[dict]:
 async def intercept(
     request: InterceptRequest,
     db: AsyncSession = Depends(get_db),
+    _token: dict = Depends(require_agent),
 ) -> InterceptResponse:
     """
     Intercept a tool call, evaluate against policies, write audit event.
