@@ -109,3 +109,18 @@ class HITLReview(Base):
 
     audit_event: Mapped[Optional["AuditEvent"]] = relationship(back_populates="hitl_review")
     session: Mapped[Optional["Session"]] = relationship(back_populates="hitl_reviews")
+
+
+class APIToken(Base):
+    __tablename__ = "api_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(200))
+    revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    created_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP, server_default=func.now()
+    )
