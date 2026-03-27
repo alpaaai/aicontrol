@@ -73,6 +73,11 @@ SQLAlchemy ORM models define `server_default=func.gen_random_uuid()`, but this o
 
 **Rule**: Always include `id, gen_random_uuid()` in raw SQL INSERTs for tables with UUID PKs.
 
+### SQLAlchemy echo logs in scripts — `setLevel` after engine creation doesn't work
+`create_async_engine(echo=True)` sets the `sqlalchemy.engine.Engine` logger to INFO at engine creation time. Calling `logging.getLogger("sqlalchemy.engine").setLevel(WARNING)` afterwards has no effect because the child logger already has INFO set.
+
+**Rule**: In standalone scripts that import `app.models.database`, set `os.environ.setdefault("APP_ENV", "production")` before any imports so the engine is created with `echo=False`.
+
 ### OPA Rego — `decision != "deny"` is invalid for priority ordering
 Using `decision != "deny"` as a guard inside another `decision` rule causes undefined behavior in Rego because rules are not evaluated sequentially — the value of `decision` is not yet known when the rule is being evaluated.
 
