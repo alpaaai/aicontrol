@@ -8,7 +8,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-from dashboard.views import audit_log, policies, agents, decisions, risk
+from dashboard.views import audit_log, policies, agents, decisions, risk, tokens
 
 VIEWS = {
     "Audit Log": audit_log,
@@ -16,6 +16,7 @@ VIEWS = {
     "Risk Score": risk,
     "Policies": policies,
     "Agents": agents,
+    "Tokens": tokens,
 }
 
 with st.sidebar:
