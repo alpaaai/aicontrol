@@ -78,6 +78,11 @@ SQLAlchemy ORM models define `server_default=func.gen_random_uuid()`, but this o
 
 **Rule**: Never suppress logs inside the script itself (that breaks dev). If a caller (e.g. Streamlit dashboard) needs clean output, pass `APP_ENV=production` in the subprocess `env`: `env={**os.environ, "APP_ENV": "production"}`. Scripts stay unchanged and dev logging is preserved.
 
+### Mocking FastAPI dependencies — `patch()` doesn't work, use `dependency_overrides`
+`Depends(_get_verified_token)` captures the function reference at definition time. Patching `app.core.auth._get_verified_token` after the fact has no effect on already-registered dependencies.
+
+**Rule**: Use `app.dependency_overrides[require_agent] = lambda: {"role": "agent"}` to mock FastAPI auth dependencies in tests. Always clean up with `app.dependency_overrides.pop(...)` in a finally block.
+
 ### OPA Rego — `decision != "deny"` is invalid for priority ordering
 Using `decision != "deny"` as a guard inside another `decision` rule causes undefined behavior in Rego because rules are not evaluated sequentially — the value of `decision` is not yet known when the rule is being evaluated.
 
