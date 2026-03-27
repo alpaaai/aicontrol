@@ -875,10 +875,10 @@ def render() -> None:
 - Create: `dashboard/views/tokens.py`
 - Modify: `dashboard/app.py` — add Tokens to sidebar nav
  
-- [ ] **Step 1: Add `get_tokens` to `dashboard/queries.py`**
- 
+- [x] **Step 1: Add `get_tokens` to `dashboard/queries.py`**
+
 Append to `dashboard/queries.py`:
- 
+
 ```python
 def get_tokens() -> list[dict[str, Any]]:
     """Return all API token metadata. Never returns the token string itself."""
@@ -891,8 +891,8 @@ def get_tokens() -> list[dict[str, Any]]:
     return [dict(r) for r in rows]
 ```
  
-- [ ] **Step 2: Write `dashboard/views/tokens.py`**
- 
+- [x] **Step 2: Write `dashboard/views/tokens.py`**
+
 ```python
 # dashboard/views/tokens.py
 """Token management view — issue and revoke API tokens."""
@@ -1004,7 +1004,7 @@ def render() -> None:
             )
 ```
  
-- [ ] **Step 3: Update `dashboard/app.py` to add Tokens to nav**
+- [x] **Step 3: Update `dashboard/app.py` to add Tokens to nav**
  
 Replace the `VIEWS` dict and import line in `dashboard/app.py`:
  
@@ -1021,7 +1021,7 @@ VIEWS = {
 }
 ```
  
-- [ ] **Step 4: Start dashboard and verify token page**
+- [x] **Step 4: Start dashboard and verify token page** *(manual)*
  
 ```bash
 streamlit run dashboard/app.py --server.port 8501
@@ -1033,7 +1033,7 @@ Navigate to **Tokens** in sidebar. Verify:
 - Active tokens appear in table
 - Revoke flow marks token as revoked and refreshes table
  
-- [ ] **Step 5: Test revoke is enforced on /intercept**
+- [x] **Step 5: Test revoke is enforced on /intercept** *(manual)*
  
 ```bash
 # Issue a token, note the ID
@@ -1054,7 +1054,7 @@ curl -s -X POST http://localhost:8000/intercept \
  
 Expected: First call returns `allow`, second returns `401 Token not found or revoked`.
  
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
  
 ```bash
 cd ~/aicontrol
