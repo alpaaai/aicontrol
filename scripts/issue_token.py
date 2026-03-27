@@ -6,6 +6,10 @@ Usage:
 """
 import argparse
 import asyncio
+import os
+
+# Prevent SQLAlchemy echo logging — engine checks APP_ENV at import time
+os.environ.setdefault("APP_ENV", "production")
 
 from sqlalchemy import text
 from app.core.auth import create_token, hash_token
