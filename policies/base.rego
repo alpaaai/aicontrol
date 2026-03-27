@@ -6,36 +6,35 @@ import future.keywords.in
 default decision := "allow"
 default reason := "default_allow"
 
-# Deny if tool is on the blacklist
-decision := "deny" if {
+# Helper: true if the tool is on any blacklist
+is_blacklisted if {
     some policy in input.policies
     policy.rule_type == "tool_blacklist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
 }
 
-reason := "tool_blacklisted" if {
-    some policy in input.policies
-    policy.rule_type == "tool_blacklist"
-    policy.action == "deny"
-    input.tool_name in policy.condition.blocked_tools
-}
-
-# Review if tool name matches a pattern
-decision := "review" if {
-    decision != "deny"
+# Helper: true if the tool matches a review pattern
+needs_review if {
     some policy in input.policies
     policy.rule_type == "tool_pattern"
     policy.action == "review"
     some pattern in policy.condition.tool_name_contains
     contains(input.tool_name, pattern)
+}
+
+# Deny if tool is on the blacklist (highest priority)
+decision := "deny" if is_blacklisted
+
+reason := "tool_blacklisted" if is_blacklisted
+
+# Review if tool matches a pattern and is not blacklisted
+decision := "review" if {
+    not is_blacklisted
+    needs_review
 }
 
 reason := "requires_human_review" if {
-    decision != "deny"
-    some policy in input.policies
-    policy.rule_type == "tool_pattern"
-    policy.action == "review"
-    some pattern in policy.condition.tool_name_contains
-    contains(input.tool_name, pattern)
+    not is_blacklisted
+    needs_review
 }
