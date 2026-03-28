@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from app.core.config import settings as _settings
 from app.core.logging import configure_logging, get_logger
 from app.models.database import async_session_factory
+from app.routers.debug import router as debug_router
 from app.routers.intercept import router as intercept_router
 from app.routers.policies import router as policies_router
 from app.services.policy_loader import load_all
@@ -31,6 +32,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.include_router(debug_router)
 app.include_router(intercept_router)
 app.include_router(policies_router)
 
