@@ -9,12 +9,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_agent
+from app.core.logging import get_logger
 from app.models.database import get_db
 from app.models.schemas import Policy
-from app.services.opa_client import evaluate
 from app.services.audit_writer import write_event
+from app.services.hitl_service import create_hitl_review, post_slack_review
+from app.services.opa_client import evaluate
 
 router = APIRouter()
+logger = get_logger("intercept")
 
 
 class InterceptRequest(BaseModel):
@@ -86,6 +89,33 @@ async def intercept(
         decision_reason=opa_result["reason"],
         sequence_number=request.sequence_number,
         duration_ms=duration_ms,
+    )
+
+    if opa_result["decision"] == "review":
+        review_id = await create_hitl_review(
+            session=db,
+            audit_event_id=event_id,
+            session_id=request.session_id,
+        )
+        import asyncio
+        asyncio.create_task(
+            post_slack_review(
+                review_id=review_id,
+                audit_event_id=event_id,
+                agent_name=request.agent_name,
+                tool_name=request.tool_name,
+                tool_parameters=request.tool_parameters,
+                decision_reason=opa_result["reason"],
+            )
+        )
+
+    logger.info(
+        "tool_intercepted",
+        tool_name=request.tool_name,
+        decision=opa_result["decision"],
+        agent_name=request.agent_name,
+        duration_ms=duration_ms,
+        session_id=str(request.session_id),
     )
 
     return InterceptResponse(

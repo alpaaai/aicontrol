@@ -8,6 +8,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger("policy_loader")
 
 POLICIES_YAML = Path(__file__).parent.parent.parent / "policies" / "policies.yaml"
 REGO_BUNDLE = Path(__file__).parent.parent.parent / "policies" / "base.rego"
@@ -54,6 +57,7 @@ async def upsert_policies(session: AsyncSession, policies: list[dict]) -> None:
             },
         )
     await session.commit()
+    logger.info("policies_upserted", count=len(policies))
 
 
 async def push_rego_to_opa() -> None:
@@ -66,6 +70,7 @@ async def push_rego_to_opa() -> None:
             headers={"Content-Type": "text/plain"},
         )
         response.raise_for_status()
+    logger.info("rego_pushed_to_opa")
 
 
 async def load_all(session: AsyncSession) -> None:

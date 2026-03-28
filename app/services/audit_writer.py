@@ -4,7 +4,10 @@ from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
 from app.models.schemas import AuditEvent
+
+logger = get_logger("audit_writer")
 
 
 async def write_event(
@@ -43,4 +46,5 @@ async def write_event(
     )
     session.add(event)
     await session.flush()
+    logger.info("audit_event_written", tool_name=tool_name, decision=decision)
     return event_id

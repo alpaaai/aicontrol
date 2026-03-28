@@ -4,8 +4,10 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
+from app.core.logging import get_logger
 
 OPA_ENDPOINT = f"{settings.opa_url}/v1/data/aicontrol"
+logger = get_logger("opa_client")
 
 
 async def evaluate(
@@ -30,7 +32,9 @@ async def evaluate(
         response.raise_for_status()
 
     result = response.json().get("result", {})
+    decision = result.get("decision", "allow")
+    logger.info("opa_evaluated", tool_name=tool_name, decision=decision)
     return {
-        "decision": result.get("decision", "allow"),
+        "decision": decision,
         "reason": result.get("reason", "default_allow"),
     }
