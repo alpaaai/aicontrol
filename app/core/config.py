@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     opa_url: str = "http://localhost:8181"
     app_env: str = "development"
     secret_key: str = "changeme"
+    slack_bot_token: str = ""
+    slack_signing_secret: str = ""
+    slack_review_channel: str = "#aicontrol-reviews"
 
 
 settings = Settings()
