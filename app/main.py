@@ -8,6 +8,7 @@ from app.models.database import async_session_factory
 from app.routers.debug import router as debug_router
 from app.routers.intercept import router as intercept_router
 from app.routers.policies import router as policies_router
+from app.routers.slack_actions import router as slack_router
 from app.services.policy_loader import load_all
 
 configure_logging(env=_settings.app_env)
@@ -35,6 +36,7 @@ app = FastAPI(
 app.include_router(debug_router)
 app.include_router(intercept_router)
 app.include_router(policies_router)
+app.include_router(slack_router)
 
 
 @app.get("/health")
