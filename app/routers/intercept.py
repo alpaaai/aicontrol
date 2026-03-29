@@ -33,6 +33,7 @@ class InterceptResponse(BaseModel):
     decision: str
     reason: str
     audit_event_id: uuid.UUID
+    review_id: Optional[uuid.UUID] = None
 
 
 async def get_active_policies(session: AsyncSession) -> list[dict]:
@@ -91,6 +92,7 @@ async def intercept(
         duration_ms=duration_ms,
     )
 
+    review_id: Optional[uuid.UUID] = None
     if opa_result["decision"] == "review":
         review_id = await create_hitl_review(
             session=db,
@@ -122,4 +124,5 @@ async def intercept(
         decision=opa_result["decision"],
         reason=opa_result["reason"],
         audit_event_id=event_id,
+        review_id=review_id if opa_result["decision"] == "review" else None,
     )
