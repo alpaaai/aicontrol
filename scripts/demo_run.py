@@ -21,6 +21,7 @@ console = Console()
 
 API_BASE = "http://localhost:8000"
 AGENT_ID = "00000000-0000-0000-0000-000000000001"
+SESSION_ID = "00000000-0000-0000-0000-000000000002"
 
 TOOL_CALLS = [
     {
@@ -126,7 +127,7 @@ def run_demo(token: str, walkthrough: bool) -> None:
         ))
         time.sleep(3)
 
-    session_id = str(uuid.uuid4())
+    session_id = SESSION_ID
     console.print(
         f"\n[dim]Session:[/dim] [cyan]{session_id[:8]}...[/cyan]  "
         f"[dim]Agent:[/dim] [cyan]claims-processing-agent[/cyan]\n"
