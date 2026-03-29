@@ -40,6 +40,16 @@ async def reset():
                      '"send_notification", "http_request", "flag_for_review"]',
         })
 
+        # Seed demo session (audit_events FK requires session to exist)
+        await session.execute(text("""
+            INSERT INTO sessions (id, agent_id, status)
+            VALUES (:id, :agent_id, 'active')
+            ON CONFLICT (id) DO NOTHING
+        """), {
+            "id": SESSION_ID,
+            "agent_id": AGENT_ID,
+        })
+
         await session.commit()
 
     print("Demo data reset complete.")
