@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1
+FROM python:3.14-slim AS base
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ app/
+COPY dashboard/ dashboard/
+COPY scripts/ scripts/
+
+RUN useradd -m -u 1000 aicontrol && chown -R aicontrol:aicontrol /app
+USER aicontrol
+
+EXPOSE 8501
+
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8501/_stcore/health').raise_for_status()"
+
+CMD ["streamlit", "run", "dashboard/app.py", \
+     "--server.address", "0.0.0.0", \
+     "--server.port", "8501", \
+     "--server.headless", "true"]

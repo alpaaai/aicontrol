@@ -27,6 +27,12 @@ slack-bolt
 weasyprint
 jinja2
 
+# Auth
+python-jose[cryptography]
+
 # Utilities
 python-dotenv
 python-multipart
+structlog
+rich
+pyyaml
