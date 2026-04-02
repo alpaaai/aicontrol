@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/OWNER/aicontrol-api:latest
+    image: ghcr.io/alpaaai/aicontrol-api:latest
     restart: unless-stopped
     env_file: .env
     ports:
@@ -20,7 +20,7 @@ services:
       - aicontrol
 
   dashboard:
-    image: ghcr.io/OWNER/aicontrol-dashboard:latest
+    image: ghcr.io/alpaaai/aicontrol-dashboard:latest
     restart: unless-stopped
     env_file: .env
     ports:
