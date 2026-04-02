@@ -79,8 +79,8 @@ fi
 # Pull images
 echo ""
 echo "[1/4] Pulling Docker images..."
-docker compose -f docker-compose.yml -f docker-compose.app.yml pull --quiet
-echo -e "${GREEN}[done]${NC} Images pulled."
+docker compose -f docker-compose.yml -f docker-compose.app.yml pull --quiet --ignore-pull-failures || true
+echo -e "${GREEN}[done]${NC} Images pulled (or using cached versions)."
 
 # Start infra first
 echo "[2/4] Starting infrastructure (postgres + opa)..."
@@ -111,7 +111,7 @@ echo ""
 echo "[4/4] Issuing initial admin token..."
 echo ""
 docker compose -f docker-compose.yml -f docker-compose.app.yml \
-  exec api python scripts/issue_token.py \
+  exec api python -m scripts.issue_token \
   --role admin --desc "Initial admin token"
 
 echo ""

@@ -46,7 +46,7 @@ Issue an agent token for your AI agent:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.app.yml \
-  exec api python scripts/issue_token.py \
+  exec api python -m scripts.issue_token \
   --role agent --desc "My first agent"
 ```
 
@@ -91,7 +91,7 @@ docker compose -f docker-compose.yml -f docker-compose.app.yml \
 Revoke tokens:
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.app.yml \
-  exec api python scripts/revoke_token.py --id <token-uuid>
+  exec api python -m scripts.revoke_token --id <token-uuid>
 ```
 
 Or use the **Tokens** tab in the dashboard.
