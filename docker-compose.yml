@@ -12,6 +12,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - aicontrol
 
   opa:
     image: openpolicyagent/opa:latest-debug
@@ -24,6 +26,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - aicontrol
 
 volumes:
   pgdata:
+
+networks:
+  aicontrol:
+    name: aicontrol
