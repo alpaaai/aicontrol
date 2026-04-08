@@ -29,3 +29,71 @@ policies:
     action: allow
     severity: low
     compliance_frameworks: []
+
+# ── Demo scenario policies ────────────────────────────────────────────────────
+
+  - name: deny_bulk_credit_query
+    description: "Block wildcard applicant_id in credit bureau queries — lending demo"
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools: ["query_credit_bureau"]
+      parameter_match:
+        applicant_id: "*"
+    action: deny
+    active: true
+    severity: critical
+    compliance_tags: ["GLBA", "OCC", "SOC2"]
+
+  - name: block_unapproved_outbound_http
+    description: "Block outbound HTTP POST to unapproved external domains — manufacturing demo"
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools: ["http_post"]
+    action: deny
+    active: true
+    severity: critical
+    compliance_tags: ["SOC2", "ISO27001"]
+
+  - name: deny_cross_encounter_phi_access
+    description: "Block PHI access outside active encounter patient — healthcare demo"
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools: ["read_patient_record"]
+      parameter_match:
+        patient_id: "PT-2024-098234"
+    action: deny
+    active: true
+    severity: critical
+    compliance_tags: ["HIPAA", "SOC2"]
+
+  - name: deny_bulk_account_lookup
+    description: "Block wildcard account_id in customer account queries — support demo"
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools: ["read_customer_account"]
+      parameter_match:
+        account_id: "*"
+    action: deny
+    active: true
+    severity: critical
+    compliance_tags: ["GDPR", "SOC2", "CCPA"]
+
+  - name: block_http_post_in_itsm
+    description: "Block all outbound HTTP POST from incident response agent — ITSM demo"
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools: ["http_post"]
+    action: deny
+    active: true
+    severity: critical
+    compliance_tags: ["SOC2", "NIST_CSF"]
+
+  - name: deny_unscoped_crm_query
+    description: "Block unfiltered account queries from CRM agent — RevOps demo"
+    rule_type: tool_blacklist
+    condition:
+      blocked_tools: ["query_all_accounts"]
+    action: deny
+    active: true
+    severity: high
+    compliance_tags: ["GDPR", "SOC2", "CCPA"]

@@ -1,10 +1,22 @@
 package aicontrol
 
+import future.keywords.every
 import future.keywords.if
 import future.keywords.in
 
 default decision := "allow"
 default reason := "default_allow"
+
+# Helper: true when all parameter_match conditions pass (or none specified)
+params_match(policy) if {
+    not policy.condition.parameter_match
+}
+
+params_match(policy) if {
+    every key, val in policy.condition.parameter_match {
+        input.tool_parameters[key] == val
+    }
+}
 
 # Helper: true if the tool is on any blacklist
 is_blacklisted if {
@@ -12,6 +24,7 @@ is_blacklisted if {
     policy.rule_type == "tool_blacklist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
+    params_match(policy)
 }
 
 # Helper: true if the tool matches a review pattern
