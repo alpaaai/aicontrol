@@ -11,3 +11,12 @@ dist/
 postgres_data/
 *.log
 .env
+
+# Internal docs — strategy, GTM, dev tooling
+PROJECT_CONTEXT.md
+CLAUDE.md
+docs/01-aicontrol-overview.md
+docs/03-aicontrol-vision.md
+docs/04-aicontrol-battle-card.md
+docs/demo-scenarios-v2.md
+.claude/
