@@ -18,13 +18,35 @@ params_match(policy) if {
     }
 }
 
-# Helper: true if the tool is on any blacklist
+# Helper: true if tool is blacklisted with NO parameter conditions (global tool ban)
 is_blacklisted if {
     some policy in input.policies
     policy.rule_type == "tool_blacklist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
+    not policy.condition.parameter_match
+}
+
+# Helper: true if tool matches AND parameter condition matches (parameter-level violation)
+is_parameter_violation if {
+    some policy in input.policies
+    policy.rule_type == "tool_blacklist"
+    policy.action == "deny"
+    input.tool_name in policy.condition.blocked_tools
+    policy.condition.parameter_match
     params_match(policy)
+}
+
+# Helper: get the first violating parameter key=value string
+violation_detail := detail if {
+    some policy in input.policies
+    policy.rule_type == "tool_blacklist"
+    policy.action == "deny"
+    input.tool_name in policy.condition.blocked_tools
+    policy.condition.parameter_match
+    params_match(policy)
+    some key, val in policy.condition.parameter_match
+    detail := sprintf("parameter_policy_violation: %s=%v", [key, val])
 }
 
 # Helper: true if the tool matches a review pattern
@@ -36,18 +58,31 @@ needs_review if {
     contains(input.tool_name, pattern)
 }
 
-# Deny if tool is on the blacklist (highest priority)
+# Deny: global tool blacklist (highest priority)
 decision := "deny" if is_blacklisted
 
 reason := "tool_blacklisted" if is_blacklisted
 
-# Review if tool matches a pattern and is not blacklisted
+# Deny: parameter-level violation (second priority)
+decision := "deny" if {
+    not is_blacklisted
+    is_parameter_violation
+}
+
+reason := violation_detail if {
+    not is_blacklisted
+    is_parameter_violation
+}
+
+# Review if tool matches a pattern and is not denied
 decision := "review" if {
     not is_blacklisted
+    not is_parameter_violation
     needs_review
 }
 
 reason := "requires_human_review" if {
     not is_blacklisted
+    not is_parameter_violation
     needs_review
 }

@@ -1,6 +1,6 @@
 policies:
   - name: block_dangerous_tools
-    description: Block tools that can execute arbitrary code or delete data
+    description: "Block globally dangerous tools regardless of parameters"
     rule_type: tool_blacklist
     condition:
       blocked_tools:
@@ -10,8 +10,9 @@ policies:
         - shell_exec
         - rm_rf
     action: deny
+    active: true
     severity: critical
-    compliance_frameworks: ["SOC2", "ISO27001"]
+    compliance_tags: ["SOC2"]
 
   - name: require_review_for_external_calls
     description: Flag any tool that makes external HTTP requests for human review
@@ -36,7 +37,8 @@ policies:
     description: "Block wildcard applicant_id in credit bureau queries — lending demo"
     rule_type: tool_blacklist
     condition:
-      blocked_tools: ["query_credit_bureau"]
+      blocked_tools:
+        - query_credit_bureau
       parameter_match:
         applicant_id: "*"
     action: deny
@@ -45,20 +47,23 @@ policies:
     compliance_tags: ["GLBA", "OCC", "SOC2"]
 
   - name: block_unapproved_outbound_http
-    description: "Block outbound HTTP POST to unapproved external domains — manufacturing demo"
+    description: "Block outbound HTTP to unapproved external domains — manufacturing demo"
     rule_type: tool_blacklist
     condition:
-      blocked_tools: ["http_post"]
+      blocked_tools:
+        - http_post
+        - http_request
     action: deny
     active: true
     severity: critical
     compliance_tags: ["SOC2", "ISO27001"]
 
   - name: deny_cross_encounter_phi_access
-    description: "Block PHI access outside active encounter patient — healthcare demo"
+    description: "Block PHI access to patient outside active encounter — healthcare demo"
     rule_type: tool_blacklist
     condition:
-      blocked_tools: ["read_patient_record"]
+      blocked_tools:
+        - read_patient_record
       parameter_match:
         patient_id: "PT-2024-098234"
     action: deny
@@ -70,7 +75,8 @@ policies:
     description: "Block wildcard account_id in customer account queries — support demo"
     rule_type: tool_blacklist
     condition:
-      blocked_tools: ["read_customer_account"]
+      blocked_tools:
+        - read_customer_account
       parameter_match:
         account_id: "*"
     action: deny
@@ -82,7 +88,8 @@ policies:
     description: "Block all outbound HTTP POST from incident response agent — ITSM demo"
     rule_type: tool_blacklist
     condition:
-      blocked_tools: ["http_post"]
+      blocked_tools:
+        - http_post
     action: deny
     active: true
     severity: critical
@@ -92,7 +99,10 @@ policies:
     description: "Block unfiltered account queries from CRM agent — RevOps demo"
     rule_type: tool_blacklist
     condition:
-      blocked_tools: ["query_all_accounts"]
+      blocked_tools:
+        - query_all_accounts
+      parameter_match:
+        filter: null
     action: deny
     active: true
     severity: high
