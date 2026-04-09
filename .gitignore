@@ -1,4 +1,5 @@
 .worktrees/
+plans/
 venv/
 .env
 __pycache__/
