@@ -4,13 +4,13 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import require_admin
 from app.core.logging import get_logger
 from app.models.database import get_db
-from app.models.schemas import Agent
+from app.models.schemas import Agent, APIToken
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 logger = get_logger("agents_api")
@@ -120,3 +120,30 @@ async def delete_agent(
         raise HTTPException(status_code=404, detail="Agent not found")
     await db.delete(agent)
     logger.info("agent_deleted", agent_id=str(agent_id))
+
+
+@router.delete("/{agent_id}/token", status_code=200)
+async def revoke_agent_token(
+    agent_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _token: dict = Depends(require_admin),
+) -> dict:
+    """Revoke all active tokens scoped to this agent."""
+    agent = await db.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    result = await db.execute(
+        update(APIToken)
+        .where(APIToken.agent_id == agent_id, APIToken.revoked == False)
+        .values(revoked=True)
+        .returning(APIToken.id)
+    )
+    revoked_ids = result.scalars().all()
+    await db.commit()
+
+    if not revoked_ids:
+        raise HTTPException(status_code=404, detail="No active token found for this agent")
+
+    logger.info("agent_token_revoked", agent_id=str(agent_id), count=len(revoked_ids))
+    return {"revoked": len(revoked_ids)}

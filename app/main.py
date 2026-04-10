@@ -11,6 +11,7 @@ from app.routers.policies import router as policies_router
 from app.routers.agents import router as agents_router
 from app.routers.reviews import router as reviews_router
 from app.routers.slack_actions import router as slack_router
+from app.routers.tokens import router as tokens_router
 from app.services.policy_loader import load_all
 
 configure_logging(env=_settings.app_env)
@@ -41,6 +42,7 @@ app.include_router(policies_router)
 app.include_router(agents_router)
 app.include_router(reviews_router)
 app.include_router(slack_router)
+app.include_router(tokens_router)
 
 
 @app.get("/health")

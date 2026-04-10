@@ -64,6 +64,8 @@ async def _get_verified_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token not found or revoked",
         )
+    # Augment payload with agent_id from DB record so callers can enforce scope
+    payload["agent_id"] = str(db_token.agent_id) if db_token.agent_id else None
     return payload
 
 

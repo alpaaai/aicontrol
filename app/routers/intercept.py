@@ -3,7 +3,7 @@ import time
 import uuid
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,12 +58,20 @@ async def get_active_policies(session: AsyncSession) -> list[dict]:
 async def intercept(
     request: InterceptRequest,
     db: AsyncSession = Depends(get_db),
-    _token: dict = Depends(require_agent),
+    token: dict = Depends(require_agent),
 ) -> InterceptResponse:
     """
     Intercept a tool call, evaluate against policies, write audit event.
     Returns allow | deny | review plus the audit event ID.
     """
+    # Enforce agent-scoped token binding: agent tokens may only intercept for their own agent_id
+    if token.get("role") == "agent" and token.get("agent_id") is not None:
+        if str(token["agent_id"]) != str(request.agent_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Token is scoped to a different agent",
+            )
+
     start = time.monotonic()
 
     # Load active policies from DB

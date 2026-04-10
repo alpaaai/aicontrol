@@ -124,3 +124,9 @@ class APIToken(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(
         TIMESTAMP, server_default=func.now()
     )
+    agent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("agents.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
