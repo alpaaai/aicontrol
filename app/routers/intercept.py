@@ -2,6 +2,7 @@
 import time
 import uuid
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -34,6 +35,18 @@ class InterceptResponse(BaseModel):
     reason: str
     audit_event_id: uuid.UUID
     review_id: Optional[uuid.UUID] = None
+
+
+def enrich_parameters(tool_name: str, tool_parameters: dict[str, Any]) -> dict[str, Any]:
+    """Enrich tool_parameters before persisting. Extracts domain from HTTP tool URLs."""
+    params = dict(tool_parameters)
+    if tool_name in ("http_get", "http_post", "http_put", "http_delete", "http_patch"):
+        url = params.get("url", "")
+        if url:
+            parsed = urlparse(url)
+            if parsed.netloc:
+                params["domain"] = parsed.netloc
+    return params
 
 
 async def get_active_policies(session: AsyncSession) -> list[dict]:
@@ -86,6 +99,9 @@ async def intercept(
 
     duration_ms = int((time.monotonic() - start) * 1000)
 
+    # Enrich parameters (e.g. extract domain from HTTP tool URLs)
+    enriched_parameters = enrich_parameters(request.tool_name, request.tool_parameters)
+
     # Write immutable audit event
     event_id = await write_event(
         session=db,
@@ -93,7 +109,7 @@ async def intercept(
         agent_id=request.agent_id,
         agent_name=request.agent_name,
         tool_name=request.tool_name,
-        tool_parameters=request.tool_parameters,
+        tool_parameters=enriched_parameters,
         decision=opa_result["decision"],
         decision_reason=opa_result["reason"],
         sequence_number=request.sequence_number,
