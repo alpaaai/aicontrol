@@ -7,6 +7,7 @@ Usage:
     python scripts/demo_run.py --token <agent-token> [--mode fast|walkthrough]
 """
 import argparse
+import os
 import time
 import uuid
 
@@ -19,7 +20,7 @@ from rich.text import Text
 
 console = Console()
 
-API_BASE = "http://localhost:8000"
+API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 AGENT_ID = "00000000-0000-0000-0000-000000000001"
 SESSION_ID = "00000000-0000-0000-0000-000000000002"
 

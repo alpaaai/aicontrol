@@ -20,6 +20,12 @@ from app.services.opa_client import evaluate
 router = APIRouter()
 logger = get_logger("intercept")
 
+RISK_SCORE_DELTA: dict[str, int] = {
+    "allow": 1,
+    "review": 10,
+    "deny": 25,
+}
+
 
 class InterceptRequest(BaseModel):
     session_id: uuid.UUID
@@ -114,6 +120,7 @@ async def intercept(
         decision_reason=opa_result["reason"],
         sequence_number=request.sequence_number,
         duration_ms=duration_ms,
+        risk_delta=RISK_SCORE_DELTA.get(opa_result["decision"], 0),
     )
 
     review_id: Optional[uuid.UUID] = None

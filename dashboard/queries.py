@@ -6,13 +6,15 @@ from sqlalchemy import text
 from dashboard.db import get_sync_session
 
 
-def get_audit_events(limit: int = 100) -> list[dict[str, Any]]:
+def get_audit_events(limit: int = 200) -> list[dict[str, Any]]:
     """Return recent audit events for the log view."""
     with get_sync_session() as session:
         rows = session.execute(text("""
             SELECT
                 ae.id,
+                ae.session_id,
                 ae.tool_name,
+                ae.tool_parameters,
                 ae.decision,
                 ae.decision_reason,
                 ae.agent_name,
@@ -33,7 +35,7 @@ def get_policies() -> list[dict[str, Any]]:
     """Return all active policies."""
     with get_sync_session() as session:
         rows = session.execute(text("""
-            SELECT id, name, description, rule_type, action,
+            SELECT id, name, description, rule_type, condition, action,
                    severity, active, created_at
             FROM policies
             ORDER BY severity DESC, name

@@ -17,7 +17,7 @@ from rich import box
 
 console = Console()
 
-API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8000")
+API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 
 SCENARIO = {
     "name": "Manufacturing — Supplier Sourcing Agent",
@@ -114,7 +114,8 @@ async def run_demo(token: str, mode: str = "walkthrough") -> None:
             f"\n  [{color}]{icon} DECISION: {decision.upper()}[/{color}]"
             f"  [dim]reason: {data.get('reason', '—')}  |  {elapsed:.0f}ms[/dim]"
         )
-        console.print(f"  [dim]audit_event_id: {data.get('audit_event_id', '—')}[/dim]")
+        if decision == "deny":
+            console.print(f"  [red]  Policy: {data.get('reason', '—')}[/red]")
 
         results.append({
             "step": i,

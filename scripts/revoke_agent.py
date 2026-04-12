@@ -12,7 +12,7 @@ import sys
 
 import httpx
 
-API_BASE = os.getenv("AICONTROL_URL", "http://localhost:8000")
+API_BASE = os.getenv("AICONTROL_URL", "http://localhost:8001")
 ADMIN_TOKEN = os.getenv("AICONTROL_ADMIN_TOKEN")
 
 
