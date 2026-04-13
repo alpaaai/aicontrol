@@ -205,6 +205,52 @@ async def test_http_tool_captures_domain():
 
 
 @pytest.mark.asyncio
+async def test_deny_writes_policy_name():
+    """Deny decisions must pass policy_name to write_event when a matching policy exists."""
+    from app.main import app
+    captured = {}
+    policy_id = uuid.uuid4()
+
+    async def capture_write_event(**kwargs):
+        captured.update(kwargs)
+        return uuid.uuid4()
+
+    policies = [
+        {
+            "id": str(policy_id),
+            "name": "block_dangerous_tool",
+            "rule_type": "tool_blacklist",
+            "action": "deny",
+            "severity": "critical",
+            "condition": {"blocked_tools": ["dangerous_tool"]},
+        }
+    ]
+
+    with patch("app.routers.intercept.evaluate", new=AsyncMock(
+        return_value={"decision": "deny", "reason": "tool_blacklisted"}
+    )), patch(
+        "app.routers.intercept.write_event", new=AsyncMock(side_effect=capture_write_event)
+    ), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
+        return_value=policies
+    )), _mock_auth():
+        payload = {
+            "session_id": str(uuid.uuid4()),
+            "agent_id": str(uuid.uuid4()),
+            "agent_name": "test-agent",
+            "tool_name": "dangerous_tool",
+            "tool_parameters": {},
+            "sequence_number": 1,
+        }
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.post("/intercept", json=payload)
+
+    assert response.status_code == 200
+    assert captured.get("policy_name") == "block_dangerous_tool"
+
+
+@pytest.mark.asyncio
 async def test_intercept_returns_review_id_on_review_decision():
     """POST /intercept must return review_id when decision is review."""
     from app.main import app

@@ -63,6 +63,7 @@ async def get_active_policies(session: AsyncSession) -> list[dict]:
     policies = result.scalars().all()
     return [
         {
+            "id": str(p.id),
             "name": p.name,
             "rule_type": p.rule_type,
             "condition": p.condition,
@@ -71,6 +72,40 @@ async def get_active_policies(session: AsyncSession) -> list[dict]:
         }
         for p in policies
     ]
+
+
+def find_fired_policy(
+    tool_name: str,
+    tool_parameters: dict[str, Any],
+    policies: list[dict],
+    decision: str,
+    reason: str,
+) -> tuple[Optional[str], Optional[str]]:
+    """Return (policy_id, policy_name) for the policy that fired, or (None, None)."""
+    if decision == "allow":
+        return None, None
+    for p in policies:
+        cond = p.get("condition") or {}
+        if reason == "tool_blacklisted":
+            if (
+                p["rule_type"] == "tool_blacklist"
+                and p["action"] == "deny"
+                and tool_name in cond.get("blocked_tools", [])
+                and not cond.get("parameter_match")
+            ):
+                return p.get("id"), p["name"]
+        elif reason.startswith("parameter_policy_violation:"):
+            if (
+                p["rule_type"] == "tool_blacklist"
+                and p["action"] == "deny"
+                and tool_name in cond.get("blocked_tools", [])
+                and cond.get("parameter_match")
+            ):
+                return p.get("id"), p["name"]
+        elif reason == "requires_human_review":
+            if p["rule_type"] == "tool_pattern" and p["action"] == "review":
+                return p.get("id"), p["name"]
+    return None, None
 
 
 @router.post("/intercept", response_model=InterceptResponse)
@@ -108,6 +143,15 @@ async def intercept(
     # Enrich parameters (e.g. extract domain from HTTP tool URLs)
     enriched_parameters = enrich_parameters(request.tool_name, request.tool_parameters)
 
+    # Identify which policy fired
+    fired_policy_id, fired_policy_name = find_fired_policy(
+        tool_name=request.tool_name,
+        tool_parameters=request.tool_parameters,
+        policies=policies,
+        decision=opa_result["decision"],
+        reason=opa_result["reason"],
+    )
+
     # Write immutable audit event
     event_id = await write_event(
         session=db,
@@ -121,6 +165,8 @@ async def intercept(
         sequence_number=request.sequence_number,
         duration_ms=duration_ms,
         risk_delta=RISK_SCORE_DELTA.get(opa_result["decision"], 0),
+        policy_name=fired_policy_name,
+        policy_id=uuid.UUID(fired_policy_id) if fired_policy_id else None,
     )
 
     review_id: Optional[uuid.UUID] = None
