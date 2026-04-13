@@ -6,6 +6,7 @@ Scenario: Monitors inventory, queries supplier catalog, recommends purchase orde
 """
 
 import asyncio
+import uuid
 import httpx
 import json
 import os
@@ -64,7 +65,7 @@ TOOL_CALLS = [
 
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
-    session_id = "00000000-0000-0000-0000-000000000002"
+    session_id = str(uuid.uuid4())
     agent_id   = "00000000-0000-0000-0000-000000000001"
 
     console.print()
