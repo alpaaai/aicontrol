@@ -52,7 +52,8 @@ def render() -> None:
                 params = json.loads(params)
             except Exception:
                 return params
-        return ", ".join(f"{k}={v}" for k, v in list(params.items())[:3])
+        full = ", ".join(f"{k}={v}" for k, v in params.items())
+        return full[:120] + "…" if len(full) > 120 else full
 
     df["parameters"] = df["tool_parameters"].apply(_params_summary)
     df["decision_icon"] = df["decision"].map(
@@ -99,6 +100,11 @@ def render() -> None:
                 try:
                     params = json.loads(params)
                 except Exception:
-                    pass
+                    params = {"raw": params}
+            # Normalize to clean JSON (converts Python None → null, handles non-serializable types)
+            try:
+                params = json.loads(json.dumps(params, default=str))
+            except Exception:
+                pass
             st.markdown("**Parameters:**")
             st.json(params)
