@@ -31,25 +31,24 @@ TOOL_CALLS = [
     {
         "tool_name": "update_deal_stage",
         "tool_parameters": {
-            "deal_id": "DEAL-2024-004471",
             "opportunity_name": "Acme Corp — Enterprise Q2",
             "stage": "proposal_sent",
             "owner": "sarah.chen@company.com",
             "notes": "Demo completed, proposal sent via email",
         },
-        "label": "Update deal DEAL-2024-004471 to proposal_sent stage",
+        "label": "Update opportunity 'Acme Corp — Enterprise Q2' to proposal_sent stage",
         "expected": "allow",
     },
     {
         "tool_name": "log_sales_activity",
         "tool_parameters": {
-            "deal_id": "DEAL-2024-004471",
+            "opportunity_name": "Acme Corp — Enterprise Q2",
             "activity_type": "demo",
             "duration_minutes": 32,
             "outcome": "positive",
             "next_step": "follow_up_proposal_review",
         },
-        "label": "Log 32-minute demo activity against deal",
+        "label": "Log 32-minute demo activity against opportunity",
         "expected": "allow",
     },
     {
