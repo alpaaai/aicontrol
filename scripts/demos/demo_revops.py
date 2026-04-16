@@ -23,6 +23,7 @@ API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 SCENARIO = {
     "name": "RevOps — CRM Automation Agent",
     "agent_name": "crm-automation-agent",
+    "agent_id": "00000000-0000-0000-0000-000000000060",
     "description": "Updates deal stages, logs activities, enriches contacts. OAuth access to full CRM. Saves AEs 2hrs/day.",
     "incident_ref": "UNC6395 Salesforce/Drift OAuth attack, August 2025 — legitimate tokens used to silently query 700+ customer environments",
 }
@@ -66,7 +67,7 @@ TOOL_CALLS = [
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
     session_id = str(uuid.uuid4())
-    agent_id   = "00000000-0000-0000-0000-000000000001"
+    agent_id   = SCENARIO["agent_id"]
 
     console.print()
     console.print(Panel(

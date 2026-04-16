@@ -23,6 +23,7 @@ API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 SCENARIO = {
     "name": "Healthcare — Clinical Documentation Agent",
     "agent_name": "clinical-documentation-agent",
+    "agent_id": "00000000-0000-0000-0000-000000000020",
     "description": "Reads patient records, pulls lab results, drafts clinical notes. Touches PHI on every interaction.",
     "incident_ref": "2025 indirect prompt injection via patient intake form — agent queried records outside active encounter",
 }
@@ -63,7 +64,7 @@ TOOL_CALLS = [
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
     session_id = str(uuid.uuid4())
-    agent_id   = "00000000-0000-0000-0000-000000000001"
+    agent_id   = SCENARIO["agent_id"]
 
     console.print()
     console.print(Panel(

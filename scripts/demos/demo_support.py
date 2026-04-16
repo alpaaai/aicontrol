@@ -23,6 +23,7 @@ API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 SCENARIO = {
     "name": "Customer Support — Support Resolution Agent",
     "agent_name": "support-resolution-agent",
+    "agent_id": "00000000-0000-0000-0000-000000000050",
     "description": "Reads customer accounts, applies service credits, resolves tier-1 tickets autonomously. 300 tickets/day.",
     "incident_ref": "Slack AI indirect prompt injection, August 2024 — agent tricked into querying accounts beyond its intended scope",
 }
@@ -62,7 +63,7 @@ TOOL_CALLS = [
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
     session_id = str(uuid.uuid4())
-    agent_id   = "00000000-0000-0000-0000-000000000001"
+    agent_id   = SCENARIO["agent_id"]
 
     console.print()
     console.print(Panel(

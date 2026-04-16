@@ -23,6 +23,7 @@ API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 SCENARIO = {
     "name": "IT / ITSM — Incident Response Agent",
     "agent_name": "incident-response-agent",
+    "agent_id": "00000000-0000-0000-0000-000000000030",
     "description": "Monitors production, investigates anomalies, applies remediations. Elevated privileges. MTTR: 47min → 6min.",
     "incident_ref": "CVE-2025-59944 — agent read poisoned config file, followed embedded instructions, escalated to RCE",
 }
@@ -68,7 +69,7 @@ TOOL_CALLS = [
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
     session_id = str(uuid.uuid4())
-    agent_id   = "00000000-0000-0000-0000-000000000001"
+    agent_id   = SCENARIO["agent_id"]
 
     console.print()
     console.print(Panel(

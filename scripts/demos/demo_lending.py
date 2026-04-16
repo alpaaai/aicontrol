@@ -23,6 +23,7 @@ API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 SCENARIO = {
     "name": "Banking / Lending — Loan Underwriting Agent",
     "agent_name": "loan-underwriting-agent",
+    "agent_id": "00000000-0000-0000-0000-000000000010",
     "description": "Reads loan applications, queries credit bureau, runs risk model. Processes 400 files/day autonomously.",
     "incident_ref": "2024 financial services reconciliation agent exfiltration via wildcard query parameter",
 }
@@ -64,7 +65,7 @@ TOOL_CALLS = [
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
     session_id = str(uuid.uuid4())
-    agent_id   = "00000000-0000-0000-0000-000000000001"
+    agent_id   = SCENARIO["agent_id"]
 
     console.print()
     console.print(Panel(

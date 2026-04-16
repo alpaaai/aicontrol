@@ -23,6 +23,7 @@ API_BASE = os.getenv("AICONTROL_API_URL", "http://localhost:8001")
 SCENARIO = {
     "name": "Manufacturing — Supplier Sourcing Agent",
     "agent_name": "supplier-sourcing-agent",
+    "agent_id": "00000000-0000-0000-0000-000000000040",
     "description": "Monitors inventory, queries supplier catalog, recommends purchase orders. Touches ERP and external supplier APIs.",
     "incident_ref": "2025 supply chain attack — compromised agent framework routed procurement confirmations to attacker-controlled endpoints",
 }
@@ -66,7 +67,7 @@ TOOL_CALLS = [
 
 async def run_demo(token: str, mode: str = "walkthrough") -> None:
     session_id = str(uuid.uuid4())
-    agent_id   = "00000000-0000-0000-0000-000000000001"
+    agent_id   = SCENARIO["agent_id"]
 
     console.print()
     console.print(Panel(
