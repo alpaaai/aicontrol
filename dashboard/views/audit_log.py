@@ -94,7 +94,8 @@ def render() -> None:
             st.markdown(f"**Policy:** {row.get('policy_name') or '—'}")
             st.markdown(f"**Duration:** {row['duration_ms']} ms")
 
-        params = row["tool_parameters"] or {}
-        normalized = json.loads(json.dumps(params, default=str))
+        raw = row["tool_parameters"] or {}
+        params = raw if isinstance(raw, dict) else json.loads(raw)
+        normalized = json.loads(json.dumps(params))
         st.markdown("**Parameters:**")
         st.json(normalized)
