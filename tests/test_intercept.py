@@ -40,6 +40,7 @@ async def test_intercept_returns_200():
         return_value=uuid.uuid4()
     )), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
         return_value=[]
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
@@ -60,6 +61,7 @@ async def test_intercept_returns_decision():
         return_value=uuid.uuid4()
     )), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
         return_value=[]
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
@@ -83,6 +85,7 @@ async def test_intercept_returns_audit_event_id():
         return_value=event_id
     )), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
         return_value=[]
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
@@ -122,7 +125,8 @@ async def test_intercept_fires_hitl_on_review_decision():
     ) as mock_hitl, patch(
         "app.routers.intercept.post_slack_review",
         new=AsyncMock(return_value="ts")
-    ), _mock_auth():
+    ), patch("app.routers.intercept.ensure_session", new=AsyncMock(
+    )), _mock_auth():
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -147,6 +151,7 @@ async def test_allow_decision_persists_parameters():
         "app.routers.intercept.write_event", new=AsyncMock(side_effect=capture_write_event)
     ), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
         return_value=[]
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         payload = {
             "session_id": str(uuid.uuid4()),
@@ -182,6 +187,7 @@ async def test_http_tool_captures_domain():
         "app.routers.intercept.write_event", new=AsyncMock(side_effect=capture_write_event)
     ), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
         return_value=[]
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         payload = {
             "session_id": str(uuid.uuid4()),
@@ -232,6 +238,7 @@ async def test_deny_writes_policy_name():
         "app.routers.intercept.write_event", new=AsyncMock(side_effect=capture_write_event)
     ), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
         return_value=policies
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         payload = {
             "session_id": str(uuid.uuid4()),
@@ -267,6 +274,7 @@ async def test_intercept_returns_review_id_on_review_decision():
         return_value=review_id
     )), patch("app.routers.intercept.post_slack_review", new=AsyncMock(
         return_value="ts"
+    )), patch("app.routers.intercept.ensure_session", new=AsyncMock(
     )), _mock_auth():
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"

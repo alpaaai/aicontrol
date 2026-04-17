@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import require_agent
 from app.core.logging import get_logger
 from app.models.database import get_db
-from app.models.schemas import Policy
+from app.models.schemas import Policy, Session
 from app.services.audit_writer import write_event
 from app.services.hitl_service import create_hitl_review, post_slack_review
 from app.services.opa_client import evaluate
@@ -72,6 +72,16 @@ async def get_active_policies(session: AsyncSession) -> list[dict]:
         }
         for p in policies
     ]
+
+
+async def ensure_session(
+    db: AsyncSession, session_id: uuid.UUID, agent_id: uuid.UUID
+) -> None:
+    """Create a session row if one does not already exist for this session_id."""
+    result = await db.execute(select(Session).where(Session.id == session_id))
+    if result.scalar_one_or_none() is None:
+        db.add(Session(id=session_id, agent_id=agent_id, status="active"))
+        await db.flush()
 
 
 def find_fired_policy(
@@ -151,6 +161,9 @@ async def intercept(
         decision=opa_result["decision"],
         reason=opa_result["reason"],
     )
+
+    # Ensure session row exists (auto-create if agent didn't pre-register)
+    await ensure_session(db, request.session_id, request.agent_id)
 
     # Write immutable audit event
     event_id = await write_event(
