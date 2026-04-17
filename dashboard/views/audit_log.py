@@ -98,4 +98,4 @@ def render() -> None:
         params = raw if isinstance(raw, dict) else json.loads(raw)
         normalized = json.loads(json.dumps(params))
         st.markdown("**Parameters:**")
-        st.json(normalized)
+        st.code(json.dumps(normalized, indent=2), language="json")
