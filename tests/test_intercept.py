@@ -276,3 +276,47 @@ async def test_intercept_returns_review_id_on_review_decision():
     data = response.json()
     assert "review_id" in data
     assert data["review_id"] == str(review_id)
+
+
+@pytest.mark.asyncio
+async def test_ensure_session_creates_when_missing():
+    """ensure_session must insert a Session row when session_id is not found."""
+    from app.routers.intercept import ensure_session
+    from app.models.schemas import Session
+
+    session_id = uuid.uuid4()
+    agent_id = uuid.uuid4()
+
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = None
+    mock_db.execute.return_value = mock_result
+
+    await ensure_session(mock_db, session_id, agent_id)
+
+    mock_db.add.assert_called_once()
+    added = mock_db.add.call_args[0][0]
+    assert isinstance(added, Session)
+    assert added.id == session_id
+    assert added.agent_id == agent_id
+    assert added.status == "active"
+    mock_db.flush.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_ensure_session_noop_when_exists():
+    """ensure_session must not insert when session already exists."""
+    from app.routers.intercept import ensure_session
+
+    session_id = uuid.uuid4()
+    agent_id = uuid.uuid4()
+
+    mock_db = AsyncMock()
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = MagicMock()  # row found
+    mock_db.execute.return_value = mock_result
+
+    await ensure_session(mock_db, session_id, agent_id)
+
+    mock_db.add.assert_not_called()
+    mock_db.flush.assert_not_called()
