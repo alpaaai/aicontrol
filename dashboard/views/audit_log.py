@@ -94,17 +94,7 @@ def render() -> None:
             st.markdown(f"**Policy:** {row.get('policy_name') or '—'}")
             st.markdown(f"**Duration:** {row['duration_ms']} ms")
 
-        params = row["tool_parameters"]
-        if params:
-            if isinstance(params, str):
-                try:
-                    params = json.loads(params)
-                except Exception:
-                    params = {"raw": params}
-            # Normalize to clean JSON (converts Python None → null, handles non-serializable types)
-            try:
-                params = json.loads(json.dumps(params, default=str))
-            except Exception:
-                pass
-            st.markdown("**Parameters:**")
-            st.json(params)
+        params = row["tool_parameters"] or {}
+        normalized = json.loads(json.dumps(params, default=str))
+        st.markdown("**Parameters:**")
+        st.json(normalized)
