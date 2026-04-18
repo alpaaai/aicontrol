@@ -59,13 +59,13 @@ policies:
     compliance_tags: ["SOC2", "ISO27001"]
 
   - name: deny_cross_encounter_phi_access
-    description: "Block PHI access to patient outside active encounter — healthcare demo"
+    description: "Block PHI access to patients outside authorized encounter cohort"
     rule_type: tool_blacklist
     condition:
       blocked_tools:
         - read_patient_record
       parameter_match:
-        patient_id: "PT-2024-098234"
+        patient_id: "PT-2024-09*"
     action: deny
     active: true
     severity: critical
