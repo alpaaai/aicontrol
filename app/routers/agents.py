@@ -83,7 +83,7 @@ async def create_agent(
         model_version=body.model_version,
         system_prompt_hash=body.system_prompt_hash,
         approved_tools=body.approved_tools,
-        status="unregistered",
+        status="active",
         metadata_=body.metadata,
     )
     db.add(agent)

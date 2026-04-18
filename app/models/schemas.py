@@ -16,7 +16,7 @@ class Agent(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     owner: Mapped[str] = mapped_column(String(100), nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="unregistered")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="active")
     framework: Mapped[Optional[str]] = mapped_column(String(50))
     model_version: Mapped[Optional[str]] = mapped_column(String(100))
     system_prompt_hash: Mapped[Optional[str]] = mapped_column(String(64))
