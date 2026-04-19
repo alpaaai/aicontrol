@@ -86,6 +86,18 @@ policy_compound_violation(policy) if {
     any_of_match(policy)
 }
 
+# ── Tool name matching (primary name + aliases) ────────────────────────────────
+
+# Helper: true if input.tool_name matches a policy's primary tool or any alias
+tool_matches(policy) if {
+    input.tool_name in policy.condition.blocked_tools
+}
+
+tool_matches(policy) if {
+    policy.condition.tool_aliases
+    input.tool_name in policy.condition.tool_aliases
+}
+
 # ── Primary violation helpers ──────────────────────────────────────────────────
 
 # Helper: true if tool is blacklisted with NO conditions (global tool ban)
@@ -93,7 +105,7 @@ is_blacklisted if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
     policy.action == "deny"
-    input.tool_name in policy.condition.blocked_tools
+    tool_matches(policy)
     not policy.condition.parameter_match
     not policy.condition.numeric_conditions
     not policy.condition.all_of
@@ -106,7 +118,7 @@ is_parameter_violation if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
     policy.action == "deny"
-    input.tool_name in policy.condition.blocked_tools
+    tool_matches(policy)
     policy.condition.parameter_match
     params_match(policy)
 }
@@ -116,7 +128,7 @@ is_numeric_violation if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
     policy.action == "deny"
-    input.tool_name in policy.condition.blocked_tools
+    tool_matches(policy)
     policy.condition.numeric_conditions
     numeric_conditions_match(policy)
 }
@@ -126,7 +138,7 @@ is_compound_violation if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
     policy.action == "deny"
-    input.tool_name in policy.condition.blocked_tools
+    tool_matches(policy)
     policy_compound_violation(policy)
 }
 
@@ -136,7 +148,7 @@ violation_detail := detail if {
         some policy in input.policies
         policy.rule_type == "tool_denylist"
         policy.action == "deny"
-        input.tool_name in policy.condition.blocked_tools
+        tool_matches(policy)
         policy.condition.parameter_match
         params_match(policy)
         some key, val in policy.condition.parameter_match
@@ -152,7 +164,7 @@ numeric_violation_detail := detail if {
         some policy in input.policies
         policy.rule_type == "tool_denylist"
         policy.action == "deny"
-        input.tool_name in policy.condition.blocked_tools
+        tool_matches(policy)
         policy.condition.numeric_conditions
         numeric_conditions_match(policy)
         some cond in policy.condition.numeric_conditions
@@ -187,7 +199,7 @@ is_time_violation if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
     policy.action == "deny"
-    input.tool_name in policy.condition.blocked_tools
+    tool_matches(policy)
     policy.condition.time_conditions
     policy_time_violation(policy)
 }
@@ -198,7 +210,7 @@ time_violation_detail := detail if {
         some policy in input.policies
         policy.rule_type == "tool_denylist"
         policy.action == "deny"
-        input.tool_name in policy.condition.blocked_tools
+        tool_matches(policy)
         policy.condition.time_conditions
         policy_time_violation(policy)
         d := sprintf("time_policy_violation: %s", [policy.name])
@@ -213,7 +225,7 @@ compound_violation_detail := detail if {
         some policy in input.policies
         policy.rule_type == "tool_denylist"
         policy.action == "deny"
-        input.tool_name in policy.condition.blocked_tools
+        tool_matches(policy)
         policy_compound_violation(policy)
         d := sprintf("compound_policy_violation: %s", [policy.name])
     }
