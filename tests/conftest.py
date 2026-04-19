@@ -9,16 +9,26 @@ from sqlalchemy import text
 # When tests run on the host machine, Docker internal hostnames won't resolve.
 # Load .env (if present) and replace Docker internal hostnames with localhost.
 try:
-    from dotenv import dotenv_values
-    _env_file = os.path.join(os.path.dirname(__file__), "..", ".env")
-    _dot = dotenv_values(_env_file)
-    _db = os.environ.get("DATABASE_URL") or _dot.get("DATABASE_URL", "")
+    from dotenv import load_dotenv, dotenv_values
+    # Walk up from tests/ to find .env (handles git worktrees where .env lives in the main repo root)
+    _start = os.path.dirname(os.path.abspath(__file__))
+    _env_file = None
+    _search = _start
+    for _ in range(5):
+        _candidate = os.path.join(_search, ".env")
+        if os.path.isfile(_candidate):
+            _env_file = _candidate
+            break
+        _search = os.path.dirname(_search)
+    if _env_file:
+        load_dotenv(_env_file, override=False)  # populate os.environ without overriding explicit env vars
+    _db = os.environ.get("DATABASE_URL", "")
     if "@postgres:" in _db:
         os.environ["DATABASE_URL"] = _db.replace("@postgres:", "@localhost:")
-    _opa = os.environ.get("OPA_URL") or _dot.get("OPA_URL", "")
+    _opa = os.environ.get("OPA_URL", "")
     if _opa == "http://opa:8181":
         os.environ["OPA_URL"] = "http://localhost:8181"
-    _slack = os.environ.get("SLACK_BOT_TOKEN") or _dot.get("SLACK_BOT_TOKEN", "")
+    _slack = os.environ.get("SLACK_BOT_TOKEN", "")
     if not _slack or _slack == "xoxb-placeholder":
         os.environ["SLACK_BOT_TOKEN"] = "xoxb-test-token"
 except Exception:

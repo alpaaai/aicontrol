@@ -70,4 +70,5 @@ async def seed():
         print(f"\nDone — {len(AGENTS)} agents seeded.")
 
 
-asyncio.run(seed())
+if __name__ == "__main__":
+    asyncio.run(seed())
