@@ -14,7 +14,7 @@ params_match(policy) if {
 
 params_match(policy) if {
     every key, val in policy.condition.parameter_match {
-        input.tool_parameters[key] == val
+        glob.match(val, [], input.tool_parameters[key])
     }
 }
 
