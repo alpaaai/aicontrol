@@ -1,7 +1,7 @@
 policies:
   - name: block_dangerous_tools
     description: "Block globally dangerous tools regardless of parameters"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - execute_code
@@ -35,7 +35,7 @@ policies:
 
   - name: deny_bulk_credit_query
     description: "Block wildcard applicant_id in credit bureau queries — lending demo"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - query_credit_bureau
@@ -48,7 +48,7 @@ policies:
 
   - name: block_unapproved_outbound_http
     description: "Block outbound HTTP to unapproved external domains — manufacturing demo"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - http_post
@@ -60,7 +60,7 @@ policies:
 
   - name: deny_cross_encounter_phi_access
     description: "Block PHI access to patients outside authorized encounter cohort"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - read_patient_record
@@ -73,7 +73,7 @@ policies:
 
   - name: deny_bulk_account_lookup
     description: "Block wildcard account_id in customer account queries — support demo"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - read_customer_account
@@ -86,7 +86,7 @@ policies:
 
   - name: block_http_post_in_itsm
     description: "Block all outbound HTTP POST from incident response agent — ITSM demo"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - http_post
@@ -97,7 +97,7 @@ policies:
 
   - name: deny_unscoped_crm_query
     description: "Block unfiltered account queries from CRM agent — RevOps demo"
-    rule_type: tool_blacklist
+    rule_type: tool_denylist
     condition:
       blocked_tools:
         - query_all_accounts

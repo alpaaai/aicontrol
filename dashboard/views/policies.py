@@ -17,7 +17,7 @@ _API_BASE = os.environ.get("AICONTROL_API_URL", "http://localhost:8001")
 _ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 
 CONDITION_EXAMPLES = {
-    "tool_blacklist": '{\n  "blocked_tools": ["http_post", "http_request"],\n  "agent_name_pattern": "incident-response-*"\n}',
+    "tool_denylist": '{\n  "blocked_tools": ["http_post", "http_request"],\n  "agent_name_pattern": "incident-response-*"\n}',
     "tool_pattern": '{\n  "tool_name_contains": ["export", "delete"]\n}',
     "parameter_match": '{\n  "blocked_tools": ["query_accounts"],\n  "parameter_match": {"filter": null}\n}',
     "rate_limit": '{\n  "max_calls_per_minute": 10,\n  "tool_name": "query_credit_bureau"\n}',
@@ -78,7 +78,7 @@ def render() -> None:
     with st.expander("Create Policy", expanded=False):
         rule_type = st.selectbox(
             "Rule type",
-            ["tool_blacklist", "tool_pattern", "parameter_match", "rate_limit"],
+            ["tool_denylist", "tool_pattern", "parameter_match", "rate_limit"],
             key="create_policy_rule_type",
         )
         placeholder = CONDITION_EXAMPLES.get(rule_type, "{}")

@@ -51,7 +51,7 @@ async def test_create_policy_returns_201():
     from app.main import app
     payload = {
         "name": f"test_policy_{uuid.uuid4().hex[:6]}",
-        "rule_type": "tool_blacklist",
+        "rule_type": "tool_denylist",
         "condition": {"blocked_tools": ["bad_tool"]},
         "action": "deny",
         "severity": "high",

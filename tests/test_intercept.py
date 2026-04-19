@@ -225,7 +225,7 @@ async def test_deny_writes_policy_name():
         {
             "id": str(policy_id),
             "name": "block_dangerous_tool",
-            "rule_type": "tool_blacklist",
+            "rule_type": "tool_denylist",
             "action": "deny",
             "severity": "critical",
             "condition": {"blocked_tools": ["dangerous_tool"]},

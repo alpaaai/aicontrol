@@ -21,7 +21,7 @@ params_match(policy) if {
 # Helper: true if tool is blacklisted with NO parameter conditions (global tool ban)
 is_blacklisted if {
     some policy in input.policies
-    policy.rule_type == "tool_blacklist"
+    policy.rule_type == "tool_denylist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
     not policy.condition.parameter_match
@@ -30,7 +30,7 @@ is_blacklisted if {
 # Helper: true if tool matches AND parameter condition matches (parameter-level violation)
 is_parameter_violation if {
     some policy in input.policies
-    policy.rule_type == "tool_blacklist"
+    policy.rule_type == "tool_denylist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
     policy.condition.parameter_match
@@ -40,7 +40,7 @@ is_parameter_violation if {
 # Helper: get the first violating parameter key=value string
 violation_detail := detail if {
     some policy in input.policies
-    policy.rule_type == "tool_blacklist"
+    policy.rule_type == "tool_denylist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
     policy.condition.parameter_match

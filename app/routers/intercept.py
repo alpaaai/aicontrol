@@ -98,7 +98,7 @@ def find_fired_policy(
         cond = p.get("condition") or {}
         if reason == "tool_blacklisted":
             if (
-                p["rule_type"] == "tool_blacklist"
+                p["rule_type"] == "tool_denylist"
                 and p["action"] == "deny"
                 and tool_name in cond.get("blocked_tools", [])
                 and not cond.get("parameter_match")
@@ -106,7 +106,7 @@ def find_fired_policy(
                 return p.get("id"), p["name"]
         elif reason.startswith("parameter_policy_violation:"):
             if (
-                p["rule_type"] == "tool_blacklist"
+                p["rule_type"] == "tool_denylist"
                 and p["action"] == "deny"
                 and tool_name in cond.get("blocked_tools", [])
                 and cond.get("parameter_match")
