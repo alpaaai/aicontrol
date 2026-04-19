@@ -17,11 +17,47 @@ _API_BASE = os.environ.get("AICONTROL_API_URL", "http://localhost:8001")
 _ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 
 CONDITION_EXAMPLES = {
-    "tool_denylist": '{\n  "blocked_tools": ["http_post", "http_request"],\n  "agent_name_pattern": "incident-response-*"\n}',
-    "tool_pattern": '{\n  "tool_name_contains": ["export", "delete"]\n}',
-    "parameter_match": '{\n  "blocked_tools": ["query_accounts"],\n  "parameter_match": {"filter": null}\n}',
-    "rate_limit": '{\n  "max_calls_per_minute": 10,\n  "tool_name": "query_credit_bureau"\n}',
+    "tool_denylist — parameter match": '''{
+  "blocked_tools": ["http_post", "http_request"],
+  "tool_aliases": ["webhook", "http_get"],
+  "parameter_match": {"url": "https://untrusted-*"}
+}''',
+    "tool_denylist — numeric": '''{
+  "blocked_tools": ["approve_loan"],
+  "numeric_conditions": [
+    {"parameter": "loan_amount", "operator": "gt", "value": 500000}
+  ]
+}''',
+    "tool_denylist — compound AND": '''{
+  "blocked_tools": ["query_all_accounts"],
+  "all_of": [
+    {"parameter_match": {"filter": "null"}},
+    {"numeric_conditions": [{"parameter": "limit", "operator": "gte", "value": 1000}]}
+  ]
+}''',
+    "tool_denylist — compound OR": '''{
+  "blocked_tools": ["read_customer_account"],
+  "any_of": [
+    {"parameter_match": {"account_id": "*"}},
+    {"parameter_match": {"account_id": "null"}}
+  ]
+}''',
+    "tool_denylist — temporal": '''{
+  "blocked_tools": ["deploy_to_production"],
+  "time_conditions": {
+    "deny_days": [5, 6],
+    "deny_hours": {"from": 9, "to": 17}
+  }
+}''',
+    "tool_pattern": '''{
+  "tool_name_contains": ["http_", "webhook", "external_"]
+}''',
 }
+
+# All tool_denylist variants submit as "tool_denylist" to the API
+RULE_TYPE_API_VALUE = {k: "tool_denylist" if "tool_denylist" in k else k
+                       for k in CONDITION_EXAMPLES}
+RULE_TYPE_API_VALUE["tool_pattern"] = "tool_pattern"
 
 
 def render() -> None:
@@ -78,7 +114,7 @@ def render() -> None:
     with st.expander("Create Policy", expanded=False):
         rule_type = st.selectbox(
             "Rule type",
-            ["tool_denylist", "tool_pattern", "parameter_match", "rate_limit"],
+            list(CONDITION_EXAMPLES.keys()),
             key="create_policy_rule_type",
         )
         placeholder = CONDITION_EXAMPLES.get(rule_type, "{}")
@@ -117,7 +153,7 @@ def render() -> None:
                     payload = {
                         "name": name.strip(),
                         "description": description.strip(),
-                        "rule_type": rule_type,
+                        "rule_type": RULE_TYPE_API_VALUE.get(rule_type, rule_type),
                         "action": action,
                         "severity": severity,
                         "condition": condition,

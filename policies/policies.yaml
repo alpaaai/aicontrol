@@ -107,3 +107,61 @@ policies:
     active: true
     severity: high
     compliance_tags: ["GDPR", "SOC2", "CCPA"]
+
+  # ── Example policies (inactive — activate per customer) ────────────────────
+
+  - name: example_high_value_loan_review
+    description: "Flag loan approvals over $500k for human review — lending example"
+    rule_type: tool_denylist
+    condition:
+      blocked_tools: [approve_loan]
+      numeric_conditions:
+        - parameter: loan_amount
+          operator: gt
+          value: 500000
+    action: review
+    severity: high
+    compliance_tags: ["SOC2", "GLBA"]
+    active: false
+
+  - name: example_bulk_revenue_export_deny
+    description: "Deny unscoped account queries requesting revenue fields — RevOps example"
+    rule_type: tool_denylist
+    condition:
+      blocked_tools: [query_all_accounts]
+      all_of:
+        - parameter_match:
+            filter: "null"
+        - numeric_conditions:
+            - parameter: limit
+              operator: gte
+              value: 1000
+    action: deny
+    severity: critical
+    compliance_tags: ["GDPR", "SOC2"]
+    active: false
+
+  - name: example_no_weekend_production_changes
+    description: "Block production changes on weekends — ITSM example"
+    rule_type: tool_denylist
+    condition:
+      blocked_tools: [deploy_to_production, restart_service, apply_config_patch]
+      time_conditions:
+        deny_days: [5, 6]
+    action: deny
+    severity: high
+    compliance_tags: ["SOC2"]
+    active: false
+
+  - name: example_phi_access_all_variants
+    description: "Block PHI access outside encounter cohort — covers all tool name variants"
+    rule_type: tool_denylist
+    condition:
+      blocked_tools: [read_patient_record]
+      tool_aliases: [queryPatientRecord, get_patient_data, fetch_patient_record, getPatientRecord]
+      parameter_match:
+        patient_id: "PT-2024-09*"
+    action: deny
+    severity: critical
+    compliance_tags: ["HIPAA"]
+    active: false
