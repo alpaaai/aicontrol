@@ -1,4 +1,5 @@
 """Async OPA client — evaluates tool calls against loaded policies."""
+import datetime
 from typing import Any
 
 import httpx
@@ -8,6 +9,15 @@ from app.core.logging import get_logger
 
 OPA_ENDPOINT = f"{settings.opa_url}/v1/data/aicontrol"
 logger = get_logger("opa_client")
+
+
+def _current_time_context() -> dict[str, int]:
+    """Return current UTC day-of-week (0=Mon…6=Sun) and hour for temporal policy evaluation."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return {
+        "day_of_week": now.weekday(),
+        "hour": now.hour,
+    }
 
 
 async def evaluate(
@@ -25,6 +35,7 @@ async def evaluate(
             "tool_name": tool_name,
             "tool_parameters": tool_parameters,
             "policies": policies,
+            "current_time": _current_time_context(),
         }
     }
     async with httpx.AsyncClient() as client:

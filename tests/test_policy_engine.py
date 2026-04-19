@@ -1,14 +1,17 @@
 """Integration tests for policy engine enhancements — numeric, compound, temporal, alias.
 
-These tests hit the live API at http://localhost:8001 with a real DB and OPA.
+Numeric, compound, and alias tests hit the live API at http://localhost:8001.
+Temporal tests use ASGITransport (in-process) so the datetime mock reaches opa_client.
 Fixtures are session-scoped; policies created in one test persist to later tests
 in the same group by design. Allow-path tests use parameters that do not trigger
 any earlier-created policy.
 """
 import pytest
 import pytest_asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from unittest.mock import patch
+from httpx import AsyncClient, ASGITransport
 
 
 # ── Numeric comparison tests ──────────────────────────────────────────────────
@@ -235,6 +238,21 @@ async def test_compound_any_of_allow_neither_matches(client, agent_token):
 
 
 # ── Temporal condition tests ──────────────────────────────────────────────────
+# These use ASGITransport (in-process) so the datetime mock reaches opa_client.
+# Policy creation still goes through the live API (client fixture).
+
+@asynccontextmanager
+async def _asgi_client(agent_token):
+    """In-process ASGI client using real agent bearer token (for datetime mocking)."""
+    from app.main import app
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        headers=agent_token,
+        timeout=10.0,
+    ) as c:
+        yield c
+
 
 @pytest.mark.asyncio
 async def test_temporal_deny_on_weekend(client, agent_token, admin_token):
@@ -253,14 +271,16 @@ async def test_temporal_deny_on_weekend(client, agent_token, admin_token):
     saturday = datetime(2026, 4, 18, 14, 0, 0, tzinfo=timezone.utc)
     with patch("app.services.opa_client.datetime") as mock_dt:
         mock_dt.datetime.now.return_value = saturday
-        resp = await client.post("/intercept", headers=agent_token, json={
-            "session_id": "00000000-0000-0000-0000-000000000099",
-            "agent_id": "00000000-0000-0000-0000-000000000030",
-            "agent_name": "incident-response-agent",
-            "tool_name": "deploy_to_production",
-            "tool_parameters": {"environment": "production", "version": "v1.2.3"},
-            "sequence_number": 1,
-        })
+        mock_dt.timezone = timezone
+        async with _asgi_client(agent_token) as asgi:
+            resp = await asgi.post("/intercept", json={
+                "session_id": "00000000-0000-0000-0000-000000000099",
+                "agent_id": "00000000-0000-0000-0000-000000000030",
+                "agent_name": "incident-response-agent",
+                "tool_name": "deploy_to_production",
+                "tool_parameters": {"environment": "production", "version": "v1.2.3"},
+                "sequence_number": 1,
+            })
     data = resp.json()
     assert data["decision"] == "deny"
     assert "time" in data["reason"]
@@ -272,14 +292,16 @@ async def test_temporal_allow_on_weekday(client, agent_token):
     monday = datetime(2026, 4, 14, 14, 0, 0, tzinfo=timezone.utc)
     with patch("app.services.opa_client.datetime") as mock_dt:
         mock_dt.datetime.now.return_value = monday
-        resp = await client.post("/intercept", headers=agent_token, json={
-            "session_id": "00000000-0000-0000-0000-000000000099",
-            "agent_id": "00000000-0000-0000-0000-000000000030",
-            "agent_name": "incident-response-agent",
-            "tool_name": "deploy_to_production",
-            "tool_parameters": {"environment": "production", "version": "v1.2.3"},
-            "sequence_number": 2,
-        })
+        mock_dt.timezone = timezone
+        async with _asgi_client(agent_token) as asgi:
+            resp = await asgi.post("/intercept", json={
+                "session_id": "00000000-0000-0000-0000-000000000099",
+                "agent_id": "00000000-0000-0000-0000-000000000030",
+                "agent_name": "incident-response-agent",
+                "tool_name": "deploy_to_production",
+                "tool_parameters": {"environment": "production", "version": "v1.2.3"},
+                "sequence_number": 2,
+            })
     assert resp.json()["decision"] == "allow"
 
 
@@ -299,14 +321,16 @@ async def test_temporal_deny_during_business_hours(client, agent_token, admin_to
     midday = datetime(2026, 4, 14, 13, 0, 0, tzinfo=timezone.utc)
     with patch("app.services.opa_client.datetime") as mock_dt:
         mock_dt.datetime.now.return_value = midday
-        resp = await client.post("/intercept", headers=agent_token, json={
-            "session_id": "00000000-0000-0000-0000-000000000099",
-            "agent_id": "00000000-0000-0000-0000-000000000030",
-            "agent_name": "incident-response-agent",
-            "tool_name": "restart_service",
-            "tool_parameters": {"service": "payment-processor"},
-            "sequence_number": 1,
-        })
+        mock_dt.timezone = timezone
+        async with _asgi_client(agent_token) as asgi:
+            resp = await asgi.post("/intercept", json={
+                "session_id": "00000000-0000-0000-0000-000000000099",
+                "agent_id": "00000000-0000-0000-0000-000000000030",
+                "agent_name": "incident-response-agent",
+                "tool_name": "restart_service",
+                "tool_parameters": {"service": "payment-processor"},
+                "sequence_number": 1,
+            })
     assert resp.json()["decision"] == "deny"
 
 
@@ -316,14 +340,16 @@ async def test_temporal_allow_outside_business_hours(client, agent_token):
     night = datetime(2026, 4, 14, 22, 0, 0, tzinfo=timezone.utc)
     with patch("app.services.opa_client.datetime") as mock_dt:
         mock_dt.datetime.now.return_value = night
-        resp = await client.post("/intercept", headers=agent_token, json={
-            "session_id": "00000000-0000-0000-0000-000000000099",
-            "agent_id": "00000000-0000-0000-0000-000000000030",
-            "agent_name": "incident-response-agent",
-            "tool_name": "restart_service",
-            "tool_parameters": {"service": "payment-processor"},
-            "sequence_number": 2,
-        })
+        mock_dt.timezone = timezone
+        async with _asgi_client(agent_token) as asgi:
+            resp = await asgi.post("/intercept", json={
+                "session_id": "00000000-0000-0000-0000-000000000099",
+                "agent_id": "00000000-0000-0000-0000-000000000030",
+                "agent_name": "incident-response-agent",
+                "tool_name": "restart_service",
+                "tool_parameters": {"service": "payment-processor"},
+                "sequence_number": 2,
+            })
     assert resp.json()["decision"] == "allow"
 
 

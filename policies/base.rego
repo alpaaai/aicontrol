@@ -98,6 +98,7 @@ is_blacklisted if {
     not policy.condition.numeric_conditions
     not policy.condition.all_of
     not policy.condition.any_of
+    not policy.condition.time_conditions
 }
 
 # Helper: true if tool matches AND parameter condition matches (parameter-level violation)
@@ -157,6 +158,50 @@ numeric_violation_detail := detail if {
         some cond in policy.condition.numeric_conditions
         numeric_op_passes(cond.operator, input.tool_parameters[cond.parameter], cond.value)
         d := sprintf("numeric_policy_violation: %s %s %v", [cond.parameter, cond.operator, cond.value])
+    }
+    count(details) > 0
+    detail := min(details)
+}
+
+# ── Temporal condition helpers ─────────────────────────────────────────────────
+
+# Helper: current day of week is in the policy's deny_days list
+day_is_denied(policy) if {
+    policy.condition.time_conditions.deny_days
+    input.current_time.day_of_week in policy.condition.time_conditions.deny_days
+}
+
+# Helper: current hour falls within the policy's deny_hours window (inclusive from, exclusive to)
+hour_is_denied(policy) if {
+    policy.condition.time_conditions.deny_hours
+    input.current_time.hour >= policy.condition.time_conditions.deny_hours.from
+    input.current_time.hour < policy.condition.time_conditions.deny_hours.to
+}
+
+# Per-policy time violation check (day or hour triggers the violation)
+policy_time_violation(policy) if { day_is_denied(policy) }
+policy_time_violation(policy) if { hour_is_denied(policy) }
+
+# Helper: true if tool matches AND a time condition fires
+is_time_violation if {
+    some policy in input.policies
+    policy.rule_type == "tool_denylist"
+    policy.action == "deny"
+    input.tool_name in policy.condition.blocked_tools
+    policy.condition.time_conditions
+    policy_time_violation(policy)
+}
+
+# Helper: detail string for time violation
+time_violation_detail := detail if {
+    details := {d |
+        some policy in input.policies
+        policy.rule_type == "tool_denylist"
+        policy.action == "deny"
+        input.tool_name in policy.condition.blocked_tools
+        policy.condition.time_conditions
+        policy_time_violation(policy)
+        d := sprintf("time_policy_violation: %s", [policy.name])
     }
     count(details) > 0
     detail := min(details)
@@ -229,12 +274,30 @@ reason := compound_violation_detail if {
     is_compound_violation
 }
 
+# Deny: temporal condition violation (fifth priority)
+decision := "deny" if {
+    not is_blacklisted
+    not is_parameter_violation
+    not is_numeric_violation
+    not is_compound_violation
+    is_time_violation
+}
+
+reason := time_violation_detail if {
+    not is_blacklisted
+    not is_parameter_violation
+    not is_numeric_violation
+    not is_compound_violation
+    is_time_violation
+}
+
 # Review if tool matches a pattern and is not denied
 decision := "review" if {
     not is_blacklisted
     not is_parameter_violation
     not is_numeric_violation
     not is_compound_violation
+    not is_time_violation
     needs_review
 }
 
@@ -243,5 +306,6 @@ reason := "requires_human_review" if {
     not is_parameter_violation
     not is_numeric_violation
     not is_compound_violation
+    not is_time_violation
     needs_review
 }
