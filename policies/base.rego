@@ -32,7 +32,63 @@ numeric_conditions_match(policy) if {
     }
 }
 
-# Helper: true if tool is blacklisted with NO parameter or numeric conditions (global tool ban)
+# ── Compound sub-condition helpers ─────────────────────────────────────────────
+
+# Sub-condition parameter_match passes when none defined or all globs match
+sub_condition_params_match(sub_cond) if {
+    not sub_cond.parameter_match
+}
+
+sub_condition_params_match(sub_cond) if {
+    every key, val in sub_cond.parameter_match {
+        glob.match(val, [], input.tool_parameters[key])
+    }
+}
+
+# Sub-condition numeric_conditions pass when none defined or all ops pass
+sub_condition_numeric_match(sub_cond) if {
+    not sub_cond.numeric_conditions
+}
+
+sub_condition_numeric_match(sub_cond) if {
+    every cond in sub_cond.numeric_conditions {
+        numeric_op_passes(cond.operator, input.tool_parameters[cond.parameter], cond.value)
+    }
+}
+
+# A sub-condition passes when both its parameter_match and numeric_conditions pass
+sub_condition_passes(sub_cond) if {
+    sub_condition_params_match(sub_cond)
+    sub_condition_numeric_match(sub_cond)
+}
+
+# Helper: true when ALL sub-conditions in all_of pass
+all_of_match(policy) if {
+    every sub_cond in policy.condition.all_of {
+        sub_condition_passes(sub_cond)
+    }
+}
+
+# Helper: true when ANY sub-condition in any_of passes
+any_of_match(policy) if {
+    some sub_cond in policy.condition.any_of
+    sub_condition_passes(sub_cond)
+}
+
+# Per-policy compound violation check (used in is_compound_violation and violation detail)
+policy_compound_violation(policy) if {
+    policy.condition.all_of
+    all_of_match(policy)
+}
+
+policy_compound_violation(policy) if {
+    policy.condition.any_of
+    any_of_match(policy)
+}
+
+# ── Primary violation helpers ──────────────────────────────────────────────────
+
+# Helper: true if tool is blacklisted with NO conditions (global tool ban)
 is_blacklisted if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
@@ -40,6 +96,8 @@ is_blacklisted if {
     input.tool_name in policy.condition.blocked_tools
     not policy.condition.parameter_match
     not policy.condition.numeric_conditions
+    not policy.condition.all_of
+    not policy.condition.any_of
 }
 
 # Helper: true if tool matches AND parameter condition matches (parameter-level violation)
@@ -62,19 +120,32 @@ is_numeric_violation if {
     numeric_conditions_match(policy)
 }
 
-# Helper: get the first violating parameter key=value string
-violation_detail := detail if {
+# Helper: true if tool matches AND compound all_of/any_of condition matches
+is_compound_violation if {
     some policy in input.policies
     policy.rule_type == "tool_denylist"
     policy.action == "deny"
     input.tool_name in policy.condition.blocked_tools
-    policy.condition.parameter_match
-    params_match(policy)
-    some key, val in policy.condition.parameter_match
-    detail := sprintf("parameter_policy_violation: %s=%v", [key, val])
+    policy_compound_violation(policy)
 }
 
-# Helper: get one violating numeric condition as a detail string (min over set avoids multi-output conflict)
+# Helper: get the first violating parameter key=value string
+violation_detail := detail if {
+    details := {d |
+        some policy in input.policies
+        policy.rule_type == "tool_denylist"
+        policy.action == "deny"
+        input.tool_name in policy.condition.blocked_tools
+        policy.condition.parameter_match
+        params_match(policy)
+        some key, val in policy.condition.parameter_match
+        d := sprintf("parameter_policy_violation: %s=%v", [key, val])
+    }
+    count(details) > 0
+    detail := min(details)
+}
+
+# Helper: get one violating numeric condition as a detail string
 numeric_violation_detail := detail if {
     details := {d |
         some policy in input.policies
@@ -86,6 +157,20 @@ numeric_violation_detail := detail if {
         some cond in policy.condition.numeric_conditions
         numeric_op_passes(cond.operator, input.tool_parameters[cond.parameter], cond.value)
         d := sprintf("numeric_policy_violation: %s %s %v", [cond.parameter, cond.operator, cond.value])
+    }
+    count(details) > 0
+    detail := min(details)
+}
+
+# Helper: get the policy name for the first matching compound violation
+compound_violation_detail := detail if {
+    details := {d |
+        some policy in input.policies
+        policy.rule_type == "tool_denylist"
+        policy.action == "deny"
+        input.tool_name in policy.condition.blocked_tools
+        policy_compound_violation(policy)
+        d := sprintf("compound_policy_violation: %s", [policy.name])
     }
     count(details) > 0
     detail := min(details)
@@ -129,11 +214,27 @@ reason := numeric_violation_detail if {
     is_numeric_violation
 }
 
+# Deny: compound AND/OR violation (fourth priority)
+decision := "deny" if {
+    not is_blacklisted
+    not is_parameter_violation
+    not is_numeric_violation
+    is_compound_violation
+}
+
+reason := compound_violation_detail if {
+    not is_blacklisted
+    not is_parameter_violation
+    not is_numeric_violation
+    is_compound_violation
+}
+
 # Review if tool matches a pattern and is not denied
 decision := "review" if {
     not is_blacklisted
     not is_parameter_violation
     not is_numeric_violation
+    not is_compound_violation
     needs_review
 }
 
@@ -141,5 +242,6 @@ reason := "requires_human_review" if {
     not is_blacklisted
     not is_parameter_violation
     not is_numeric_violation
+    not is_compound_violation
     needs_review
 }
