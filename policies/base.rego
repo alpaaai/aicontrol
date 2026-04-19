@@ -7,6 +7,30 @@ import future.keywords.in
 default decision := "allow"
 default reason := "default_allow"
 
+# Helper: compare a single policy value against an actual parameter value.
+# Uses glob only when val contains wildcard chars (* or ?); otherwise exact equality.
+# The string "null" in a policy matches a JSON null parameter value.
+param_value_matches(val, actual) if {
+    not contains(val, "*")
+    not contains(val, "?")
+    actual == val
+}
+
+# String "null" in policy condition matches a JSON null actual value
+param_value_matches("null", actual) if {
+    actual == null
+}
+
+param_value_matches(val, actual) if {
+    contains(val, "*")
+    glob.match(val, [], actual)
+}
+
+param_value_matches(val, actual) if {
+    contains(val, "?")
+    glob.match(val, [], actual)
+}
+
 # Helper: true when all parameter_match conditions pass (or none specified)
 params_match(policy) if {
     not policy.condition.parameter_match
@@ -14,7 +38,7 @@ params_match(policy) if {
 
 params_match(policy) if {
     every key, val in policy.condition.parameter_match {
-        glob.match(val, [], input.tool_parameters[key])
+        param_value_matches(val, input.tool_parameters[key])
     }
 }
 
@@ -34,14 +58,14 @@ numeric_conditions_match(policy) if {
 
 # ── Compound sub-condition helpers ─────────────────────────────────────────────
 
-# Sub-condition parameter_match passes when none defined or all globs match
+# Sub-condition parameter_match passes when none defined or all values match
 sub_condition_params_match(sub_cond) if {
     not sub_cond.parameter_match
 }
 
 sub_condition_params_match(sub_cond) if {
     every key, val in sub_cond.parameter_match {
-        glob.match(val, [], input.tool_parameters[key])
+        param_value_matches(val, input.tool_parameters[key])
     }
 }
 
