@@ -23,13 +23,19 @@ param_value_matches("null", actual) if {
 
 param_value_matches(val, actual) if {
     contains(val, "*")
+    val != "*"
     glob.match(val, [], actual)
 }
 
 param_value_matches(val, actual) if {
     contains(val, "?")
+    val != "?"
     glob.match(val, [], actual)
 }
+
+# Bare "*" or "?" — exact literal match only
+param_value_matches("*", actual) if { actual == "*" }
+param_value_matches("?", actual) if { actual == "?" }
 
 # Helper: true when all parameter_match conditions pass (or none specified)
 params_match(policy) if {
