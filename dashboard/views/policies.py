@@ -110,8 +110,22 @@ def render() -> None:
 
     st.divider()
 
+    # Persist expander open state across reruns so rule_type selectbox changes don't collapse it
+    if "create_policy_expander_open" not in st.session_state:
+        st.session_state["create_policy_expander_open"] = False
+
+    # Display deferred feedback from the previous render cycle before the expander
+    if "create_policy_feedback" in st.session_state:
+        feedback = st.session_state.pop("create_policy_feedback")
+        if feedback["type"] == "success":
+            st.success(feedback["message"])
+        else:
+            st.error(feedback["message"])
+
     # Create new policy form — rule_type is OUTSIDE the form so placeholder updates on change
-    with st.expander("Create Policy", expanded=False):
+    with st.expander("Create Policy", expanded=st.session_state["create_policy_expander_open"]):
+        st.session_state["create_policy_expander_open"] = True
+
         rule_type = st.selectbox(
             "Rule type",
             list(CONDITION_EXAMPLES.keys()),
@@ -167,7 +181,11 @@ def render() -> None:
                             timeout=10,
                         )
                         if resp.status_code == 201:
-                            st.success(f"Policy '{name}' created.")
+                            st.session_state["create_policy_feedback"] = {
+                                "type": "success",
+                                "message": f"Policy '{name}' created.",
+                            }
+                            st.session_state["create_policy_expander_open"] = False
                             st.rerun()
                         else:
                             st.error(f"API returned {resp.status_code}: {resp.text}")
