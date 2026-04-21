@@ -71,7 +71,7 @@ def render() -> None:
         df = pd.DataFrame(policies)
         df["active"] = df["active"].map(lambda x: "Active" if x else "Inactive")
 
-        # Row selection for condition detail
+        # Row selection for condition detail and delete
         selection = st.dataframe(
             df[["name", "rule_type", "condition", "action", "severity", "active", "description"]],
             use_container_width=True,
@@ -84,8 +84,51 @@ def render() -> None:
         selected_rows = selection.selection.get("rows", [])
         if selected_rows:
             row = df.iloc[selected_rows[0]]
+            policy_id = str(policies[selected_rows[0]]["id"])
+            policy_name = row["name"]
+
             st.divider()
-            st.subheader(f"Policy: {row['name']}")
+            detail_col, del_col = st.columns([5, 1])
+            with detail_col:
+                st.subheader(f"Policy: {policy_name}")
+            with del_col:
+                st.write("")  # vertical alignment nudge
+                if st.session_state.get("delete_confirm_id") == policy_id:
+                    if st.button("Cancel", key="delete_cancel"):
+                        st.session_state.pop("delete_confirm_id", None)
+                        st.rerun()
+                else:
+                    if st.button("Delete", key="delete_request", type="secondary"):
+                        st.session_state["delete_confirm_id"] = policy_id
+                        st.rerun()
+
+            # Confirmation warning — shown on the render cycle after Delete is clicked
+            if st.session_state.get("delete_confirm_id") == policy_id:
+                st.warning(
+                    f"Delete **{policy_name}**? This removes the policy from enforcement immediately."
+                )
+                if st.button("Confirm delete", key="delete_confirm", type="primary"):
+                    if not _ADMIN_TOKEN:
+                        st.error("ADMIN_TOKEN environment variable not set.")
+                    else:
+                        try:
+                            resp = requests.delete(
+                                f"{_API_BASE}/policies/{policy_id}",
+                                headers={"Authorization": f"Bearer {_ADMIN_TOKEN}"},
+                                timeout=10,
+                            )
+                            if resp.status_code == 204:
+                                st.session_state.pop("delete_confirm_id", None)
+                                st.session_state["create_policy_feedback"] = {
+                                    "type": "success",
+                                    "message": f"Policy '{policy_name}' deleted.",
+                                }
+                                st.rerun()
+                            else:
+                                st.error(f"API returned {resp.status_code}: {resp.text}")
+                        except requests.RequestException as exc:
+                            st.error(f"Request failed: {exc}")
+
             c1, c2 = st.columns(2)
             with c1:
                 st.markdown(f"**Rule type:** {row['rule_type']}")
@@ -164,26 +207,49 @@ def render() -> None:
 
                 if condition is not None:
                     frameworks = [f.strip() for f in compliance_raw.split(",") if f.strip()]
-                    payload = {
-                        "name": name.strip(),
-                        "description": description.strip(),
-                        "rule_type": RULE_TYPE_API_VALUE.get(rule_type, rule_type),
-                        "action": action,
-                        "severity": severity,
-                        "condition": condition,
-                        "compliance_frameworks": frameworks,
-                    }
+                    # Upsert: update if a policy with this name already exists
+                    existing = next(
+                        (p for p in policies if p["name"] == name.strip()), None
+                    )
                     try:
-                        resp = requests.post(
-                            f"{_API_BASE}/policies",
-                            json=payload,
-                            headers={"Authorization": f"Bearer {_ADMIN_TOKEN}"},
-                            timeout=10,
-                        )
-                        if resp.status_code == 201:
+                        if existing:
+                            resp = requests.put(
+                                f"{_API_BASE}/policies/{existing['id']}",
+                                json={
+                                    "description": description.strip(),
+                                    "rule_type": RULE_TYPE_API_VALUE.get(rule_type, rule_type),
+                                    "action": action,
+                                    "severity": severity,
+                                    "condition": condition,
+                                    "compliance_frameworks": frameworks,
+                                },
+                                headers={"Authorization": f"Bearer {_ADMIN_TOKEN}"},
+                                timeout=10,
+                            )
+                            ok_status = 200
+                            verb = "updated"
+                        else:
+                            resp = requests.post(
+                                f"{_API_BASE}/policies",
+                                json={
+                                    "name": name.strip(),
+                                    "description": description.strip(),
+                                    "rule_type": RULE_TYPE_API_VALUE.get(rule_type, rule_type),
+                                    "action": action,
+                                    "severity": severity,
+                                    "condition": condition,
+                                    "compliance_frameworks": frameworks,
+                                },
+                                headers={"Authorization": f"Bearer {_ADMIN_TOKEN}"},
+                                timeout=10,
+                            )
+                            ok_status = 201
+                            verb = "created"
+
+                        if resp.status_code == ok_status:
                             st.session_state["create_policy_feedback"] = {
                                 "type": "success",
-                                "message": f"Policy '{name}' created.",
+                                "message": f"Policy '{name.strip()}' {verb}.",
                             }
                             st.session_state["create_policy_expander_open"] = False
                             st.rerun()

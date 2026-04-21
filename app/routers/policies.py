@@ -27,6 +27,7 @@ class PolicyCreate(BaseModel):
 
 class PolicyUpdate(BaseModel):
     description: Optional[str] = None
+    rule_type: Optional[str] = None
     condition: Optional[dict[str, Any]] = None
     action: Optional[str] = None
     severity: Optional[str] = None
