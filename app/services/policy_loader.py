@@ -34,7 +34,7 @@ async def upsert_policies(session: AsyncSession, policies: list[dict]) -> None:
                 VALUES
                     (gen_random_uuid(), :name, :description, :rule_type,
                      CAST(:condition AS jsonb), :action,
-                     CAST(:compliance_frameworks AS jsonb), :severity, true)
+                     CAST(:compliance_frameworks AS jsonb), :severity, :active)
                 ON CONFLICT (name) DO UPDATE SET
                     description = EXCLUDED.description,
                     rule_type = EXCLUDED.rule_type,
@@ -42,7 +42,7 @@ async def upsert_policies(session: AsyncSession, policies: list[dict]) -> None:
                     action = EXCLUDED.action,
                     compliance_frameworks = EXCLUDED.compliance_frameworks,
                     severity = EXCLUDED.severity,
-                    active = true
+                    active = EXCLUDED.active
             """),
             {
                 "name": p["name"],
@@ -54,6 +54,7 @@ async def upsert_policies(session: AsyncSession, policies: list[dict]) -> None:
                     p.get("compliance_frameworks", [])
                 ),
                 "severity": p.get("severity", "medium"),
+                "active": p.get("active", True),
             },
         )
     await session.commit()

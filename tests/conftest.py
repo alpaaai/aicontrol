@@ -56,6 +56,20 @@ def reset_config_and_db_engine():
 
 # ── Integration test fixtures (live API at localhost:8001) ────────────────────
 
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def _cleanup_test_policies():
+    """Session teardown: remove any test_ policies that leaked into the DB."""
+    yield
+    from app.models.database import async_session_factory
+    async with async_session_factory() as session:
+        await session.execute(text(
+            "UPDATE audit_events SET policy_id = NULL, policy_name = NULL "
+            "WHERE policy_id IN (SELECT id FROM policies WHERE name LIKE 'test_%')"
+        ))
+        await session.execute(text("DELETE FROM policies WHERE name LIKE 'test_%'"))
+        await session.commit()
+
+
 @pytest_asyncio.fixture(scope="session")
 async def _seed_and_token_setup():
     """Session-scoped: seed demo agents + issue admin and agent tokens once."""
