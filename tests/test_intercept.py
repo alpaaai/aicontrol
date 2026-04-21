@@ -56,7 +56,7 @@ async def test_intercept_returns_decision():
     from app.main import app
 
     with patch("app.routers.intercept.evaluate", new=AsyncMock(
-        return_value={"decision": "deny", "reason": "tool_blacklisted"}
+        return_value={"decision": "deny", "reason": "tool_denylisted"}
     )), patch("app.routers.intercept.write_event", new=AsyncMock(
         return_value=uuid.uuid4()
     )), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
@@ -182,7 +182,7 @@ async def test_http_tool_captures_domain():
         return uuid.uuid4()
 
     with patch("app.routers.intercept.evaluate", new=AsyncMock(
-        return_value={"decision": "deny", "reason": "tool_blacklisted"}
+        return_value={"decision": "deny", "reason": "tool_denylisted"}
     )), patch(
         "app.routers.intercept.write_event", new=AsyncMock(side_effect=capture_write_event)
     ), patch("app.routers.intercept.get_active_policies", new=AsyncMock(
@@ -233,7 +233,7 @@ async def test_deny_writes_policy_name():
     ]
 
     with patch("app.routers.intercept.evaluate", new=AsyncMock(
-        return_value={"decision": "deny", "reason": "tool_blacklisted"}
+        return_value={"decision": "deny", "reason": "tool_denylisted"}
     )), patch(
         "app.routers.intercept.write_event", new=AsyncMock(side_effect=capture_write_event)
     ), patch("app.routers.intercept.get_active_policies", new=AsyncMock(

@@ -275,7 +275,7 @@ needs_review if {
 # Deny: global tool blacklist (highest priority)
 decision := "deny" if is_blacklisted
 
-reason := "tool_blacklisted" if is_blacklisted
+reason := "tool_denylisted" if is_blacklisted
 
 # Deny: parameter-level violation (second priority)
 decision := "deny" if {

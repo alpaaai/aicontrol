@@ -96,7 +96,7 @@ def find_fired_policy(
         return None, None
     for p in policies:
         cond = p.get("condition") or {}
-        if reason == "tool_blacklisted":
+        if reason == "tool_denylisted":
             if (
                 p["rule_type"] == "tool_denylist"
                 and p["action"] == "deny"

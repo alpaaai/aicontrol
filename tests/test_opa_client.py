@@ -32,7 +32,7 @@ async def test_evaluate_returns_deny_for_blacklisted_tool():
 
     mock_response = MagicMock()
     mock_response.json.return_value = {
-        "result": {"decision": "deny", "reason": "tool_blacklisted"}
+        "result": {"decision": "deny", "reason": "tool_denylisted"}
     }
     mock_response.raise_for_status = MagicMock()
 

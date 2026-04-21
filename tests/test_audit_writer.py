@@ -47,7 +47,7 @@ async def test_write_event_returns_uuid():
         tool_name="safe_tool",
         tool_parameters={},
         decision="deny",
-        decision_reason="tool_blacklisted",
+        decision_reason="tool_denylisted",
         sequence_number=2,
         duration_ms=10,
     )
