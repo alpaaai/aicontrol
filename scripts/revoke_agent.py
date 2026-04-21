@@ -51,17 +51,17 @@ def main() -> None:
         print("Cancelled.")
         sys.exit(0)
 
-    # Deactivate agent via PUT (set status to inactive)
+    # Suspend agent via PUT
     resp = httpx.put(
         f"{API_BASE}/agents/{agent_id}",
         headers=headers,
-        json={"status": "inactive"},
+        json={"status": "suspended"},
         timeout=10.0,
     )
     if resp.status_code != 200:
         print(f"Error deactivating agent: {resp.status_code} {resp.text}")
         sys.exit(1)
-    print("Agent deactivated.")
+    print("Agent suspended.")
 
     # Revoke agent's scoped token
     resp = httpx.delete(

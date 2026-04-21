@@ -5,8 +5,7 @@ import streamlit as st
 from dashboard.queries import get_agents
 
 STATUS_ICONS = {
-    "approved": "✅",
-    "unregistered": "⚪",
+    "active": "✅",
     "suspended": "🔴",
 }
 

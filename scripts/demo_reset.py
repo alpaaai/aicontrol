@@ -29,13 +29,13 @@ async def reset():
             VALUES
                 (:id, :name, :owner, :status, CAST(:tools AS jsonb))
             ON CONFLICT (id) DO UPDATE SET
-                status = 'approved',
+                status = 'active',
                 name = EXCLUDED.name
         """), {
             "id": AGENT_ID,
             "name": "claims-processing-agent",
             "owner": "ai-team@acme-insurance.com",
-            "status": "approved",
+            "status": "active",
             "tools": '["lookup_policy", "calculate_payout", '
                      '"send_notification", "http_request", "flag_for_review"]',
         })

@@ -4,7 +4,7 @@ from typing import Optional
 
 from sqlalchemy import UUID, Boolean, ForeignKey, Integer, String, Text, TIMESTAMP
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from sqlalchemy.sql import func
 
 from app.models.database import Base
@@ -25,6 +25,13 @@ class Agent(Base):
     approved_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP)
     metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, server_default="{}")
     created_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, server_default=func.now())
+
+    @validates("status")
+    def _validate_status(self, _key: str, value: str) -> str:
+        allowed = {"active", "suspended"}
+        if value not in allowed:
+            raise ValueError(f"Agent status must be one of {allowed}, got {value!r}")
+        return value
 
     sessions: Mapped[list["Session"]] = relationship(back_populates="agent")
     audit_events: Mapped[list["AuditEvent"]] = relationship(back_populates="agent")

@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +34,13 @@ class AgentUpdate(BaseModel):
     approved_tools: Optional[list[str]] = None
     status: Optional[str] = None
     approved_by: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def _status_must_be_valid(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in {"active", "suspended"}:
+            raise ValueError("status must be 'active' or 'suspended'")
+        return v
 
 
 class AgentResponse(BaseModel):
